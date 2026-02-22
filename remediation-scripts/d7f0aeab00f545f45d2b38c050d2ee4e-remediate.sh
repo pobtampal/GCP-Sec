@@ -4,13 +4,13 @@
 # Category:  SOFTWARE_VULNERABILITY
 # Priority:  CRITICAL (risk score 91.56)
 # Resource:  wanaware-deployment-cluster
-# Project:   
+# Project:   503291607878
 # CVE:           CVE-2025-22871 (CVSS 9.1)
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="503291607878"
 RESOURCE="wanaware-deployment-cluster"
 CATEGORY="SOFTWARE_VULNERABILITY"
 DRY_RUN=${DRY_RUN:-false}

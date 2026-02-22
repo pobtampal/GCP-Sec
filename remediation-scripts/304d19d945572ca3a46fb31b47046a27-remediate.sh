@@ -4,12 +4,12 @@
 # Category:  SERVICE ACCOUNT THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  projects/wa-gcp-test/serviceAccounts/885453410960-compute@developer.gserviceaccount.com
-# Project:   
+# Project:   885453410960
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="885453410960"
 RESOURCE="projects/wa-gcp-test/serviceAccounts/885453410960-compute@developer.gserviceaccount.com"
 CATEGORY="SERVICE ACCOUNT THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

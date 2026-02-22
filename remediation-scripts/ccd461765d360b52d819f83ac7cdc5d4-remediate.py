@@ -2,9 +2,9 @@
 # ============================================================
 # Finding:   ccd461765d360b52d819f83ac7cdc5d4
 # Category:  OS_VULNERABILITY
-# Priority:  CRITICAL (risk score 91.56)
+# Priority:  CRITICAL (risk score 96.36)
 # Resource:  wanaware-deployment-cluster
-# Project:   
+# Project:   503291607878
 # CVE:           CVE-2024-5535 (CVSS 9.1)
 # Generated: 2026-02-22
 # ============================================================

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GCP Security Analyzer — Demo Specification</title>
+<style>
+:root {
+  --navy: #0f172a;
+  --blue: #2563eb;
+  --blue-bg: #eff6ff;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --amber: #b45309;
+  --amber-bg: #fffbeb;
+  --green: #166534;
+  --green-bg: #f0fdf4;
+  --page-bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --t1: #0f172a;
+  --t2: #475569;
+  --t3: #94a3b8;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--t1);
+  background: var(--page-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 32px 60px;
+}
+
+/* Header */
+.hero {
+  background: var(--navy);
+  color: #fff;
+  padding: 48px 40px;
+  border-radius: 12px;
+  margin-bottom: 40px;
+}
+.hero h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+.hero .subtitle {
+  font-size: 16px;
+  color: var(--t3);
+  margin-bottom: 20px;
+}
+.hero-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #94a3b8;
+}
+.hero-meta span {
+  background: rgba(255,255,255,0.08);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Sections */
+section {
+  margin-bottom: 36px;
+}
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--blue);
+  display: inline-block;
+}
+h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t1);
+  margin: 24px 0 10px;
+}
+h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t2);
+  margin: 16px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+p { margin-bottom: 12px; color: var(--t1); }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+
+/* Problem/Solution grid */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.compare-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  border-top: 3px solid var(--border);
+}
+.compare-card.problem { border-top-color: var(--red); }
+.compare-card.solution { border-top-color: var(--green); }
+.compare-card h4 { margin-top: 0; }
+.compare-card ul { padding-left: 18px; }
+.compare-card li { margin-bottom: 6px; font-size: 14px; color: var(--t2); }
+
+/* Differentiators */
+.diff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.diff-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  text-align: center;
+}
+.diff-card .num {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--blue);
+  line-height: 1.1;
+}
+.diff-card .label {
+  font-size: 12px;
+  color: var(--t2);
+  margin-top: 4px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-bottom: 16px;
+  background: var(--card);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+thead th {
+  background: #f1f5f9;
+  color: var(--t2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--t1);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #f8fafc; }
+
+/* Code blocks */
+pre {
+  background: var(--navy);
+  color: #e2e8f0;
+  padding: 16px 20px;
+  border-radius: 8px;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+code {
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--blue);
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Demo acts */
+.act {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  border-left: 4px solid var(--blue);
+}
+.act-num {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--blue);
+  margin-bottom: 4px;
+}
+.act h3 { margin-top: 0; }
+.narrative {
+  background: var(--blue-bg);
+  border-left: 3px solid var(--blue);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  font-size: 14px;
+  color: #1e40af;
+  margin: 12px 0;
+  line-height: 1.6;
+}
+
+/* FAQ */
+.faq-group { margin-bottom: 24px; }
+.faq-group h3 {
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.faq-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.faq-q {
+  padding: 14px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--t1);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.faq-q:hover { background: #f8fafc; }
+.faq-q .arrow {
+  font-size: 12px;
+  color: var(--t3);
+  transition: transform 0.2s;
+}
+.faq-q.open .arrow { transform: rotate(180deg); }
+.faq-a {
+  display: none;
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--t2);
+  line-height: 1.7;
+}
+.faq-a.open { display: block; }
+.faq-a table { margin-top: 8px; }
+
+/* Steps */
+.steps {
+  counter-reset: step;
+  list-style: none;
+  padding: 0;
+}
+.steps li {
+  counter-increment: step;
+  padding: 12px 16px 12px 56px;
+  position: relative;
+  margin-bottom: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  width: 28px;
+  height: 28px;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.steps li strong { color: var(--t1); }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.b-crit { background: var(--red-bg); color: var(--red); }
+.b-high { background: var(--amber-bg); color: var(--amber); }
+.b-med { background: #fefce8; color: #92400e; }
+.b-low { background: var(--green-bg); color: var(--green); }
+.b-blue { background: var(--blue-bg); color: var(--blue); }
+
+/* Print */
+@media print {
+  body { background: #fff; font-size: 12px; }
+  .container { padding: 20px; }
+  .hero { background: #000 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .faq-a { display: block !important; }
+  pre { font-size: 11px; }
+  .act, .card { break-inside: avoid; }
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .compare-grid, .diff-grid { grid-template-columns: 1fr; }
+  .container { padding: 20px 16px; }
+  .hero { padding: 32px 24px; }
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--t3);
+  padding: 24px 0 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<div class="hero">
+  <h1>GCP Security Analyzer</h1>
+  <div class="subtitle">Demo Specification &amp; Presentation Guide</div>
+  <div class="hero-meta">
+    <span>Duration: 15&ndash;20 min</span>
+    <span>Audience: Leadership / Security Stakeholders</span>
+    <span>Date: February 2026</span>
+  </div>
+</div>
+
+<!-- ── Executive Overview ────────────────────────────────── -->
+<section>
+  <h2>1. Executive Overview</h2>
+
+  <div class="card">
+    <h3>What Is It?</h3>
+    <p>GCP Security Analyzer is a <strong>purpose-built command-line tool</strong> that connects directly to Google Cloud's Security Command Center (SCC), fetches active security findings, and transforms raw data into <strong>prioritized, actionable intelligence</strong> &mdash; complete with risk scores, compliance mapping, and executable remediation scripts.</p>
+  </div>
+
+  <h3>The Problem vs. The Solution</h3>
+  <div class="compare-grid">
+    <div class="compare-card problem">
+      <h4 style="color: var(--red);">Today (Manual Process)</h4>
+      <ul>
+        <li>Manually export CSV from SCC console</li>
+        <li>Risk prioritization is subjective and inconsistent</li>
+        <li>Remediation guidance is generic</li>
+        <li>Compliance mapping requires cross-referencing docs</li>
+        <li>Reports are static spreadsheets</li>
+        <li>Every report overwrites the last</li>
+      </ul>
+    </div>
+    <div class="compare-card solution">
+      <h4 style="color: var(--green);">With GCP Security Analyzer</h4>
+      <ul>
+        <li>One command fetches live findings via API</li>
+        <li>Deterministic 0&ndash;100 scoring with full transparency</li>
+        <li>Finding-specific bash/python scripts ready to execute</li>
+        <li>Automatic detection across 7 compliance frameworks</li>
+        <li>Interactive HTML dashboards + MD + JSON + CSV</li>
+        <li>Timestamped unique filenames for audit trail</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>By the Numbers</h3>
+  <div class="diff-grid">
+    <div class="diff-card"><div class="num">&lt; 10s</div><div class="label">To score ~3,000 findings</div></div>
+    <div class="diff-card"><div class="num">6</div><div class="label">Weighted scoring factors</div></div>
+    <div class="diff-card"><div class="num">7</div><div class="label">Compliance frameworks</div></div>
+    <div class="diff-card"><div class="num">11</div><div class="label">Specialized script categories</div></div>
+    <div class="diff-card"><div class="num">4</div><div class="label">Output formats</div></div>
+    <div class="diff-card"><div class="num">0</div><div class="label">External dependencies</div></div>
+  </div>
+</section>
+
+<!-- ── Demo Script ───────────────────────────────────────── -->
+<section>
+  <h2>2. Demo Script &mdash; Step by Step</h2>
+
+  <div class="act">
+    <div class="act-num">Opening &mdash; 1 minute</div>
+    <h3>Set the Stage</h3>
+    <div class="narrative">"Today I'm going to show you how we can go from thousands of raw security findings in GCP to a prioritized, actionable remediation plan &mdash; with executable fix scripts &mdash; in under 60 seconds."</div>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Act 1 &mdash; 2 minutes</div>
+    <h3>The Raw Data Problem</h3>
+    <p>Show the scale and complexity of raw SCC data:</p>
+    <pre><code>wc -l findings.csv          # Thousands of rows
+head -1 findings.csv         # 60+ columns of raw data</code></pre>
+    <div class="narrative">"This is what our security team currently works with &mdash; thousands of findings across 60+ columns. Prioritizing these manually takes hours, and the process is inconsistent between analysts. Let me show you a better way."</div>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Act 2 &mdash; 2 minutes</div>
+    <h3>One-Command Analysis</h3>
+    <p>Run the analyzer and narrate each phase as it prints:</p>
+    <pre><code>./gcp-security-analyzer analyze findings.csv -v</code></pre>
+    <div class="narrative">"The tool is scoring each finding on a 0-to-100 scale&hellip; detecting compliance violations&hellip; generating remediation scripts for every CRITICAL finding&hellip; and producing reports. Done."</div>
+    <p>Point out the summary output:</p>
+    <pre><code>&mdash;&mdash; Analysis Complete &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+  Total findings:  2,847
+  Critical:        142
+  High:            538
+  Medium:          1,203
+  Low:             964
+  Mean risk score: 47.32
+&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</code></pre>
+    <div class="narrative">"In seconds, we've scored and prioritized nearly 3,000 findings. 142 are CRITICAL &mdash; those are our immediate focus."</div>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Act 3 &mdash; 5 minutes (The Showstopper)</div>
+    <h3>The Interactive Report</h3>
+    <pre><code>open findings-report-*.html</code></pre>
+    <p>Walk through each section of the HTML report:</p>
+    <table>
+      <thead><tr><th>Section</th><th>What to Highlight</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Executive Summary</strong></td><td>At-a-glance severity distribution, risk score statistics, top categories</td></tr>
+        <tr><td><strong>Priority Breakdown</strong></td><td>Defined SLAs: <span class="badge b-crit">CRITICAL</span> = 24&ndash;48h, <span class="badge b-high">HIGH</span> = 1 week</td></tr>
+        <tr><td><strong>Risk Methodology</strong></td><td>Complete transparency &mdash; six components, no black boxes</td></tr>
+        <tr><td><strong>Findings Tables</strong></td><td>Searchable, sortable, per-priority tables</td></tr>
+        <tr><td><strong>Compliance</strong></td><td>CIS, PCI-DSS, HIPAA, SOC2, ISO 27001, NIST, GDPR mapping</td></tr>
+        <tr><td><strong>Remediation Actions</strong></td><td>Expandable cards with summary, next steps, effort, and <em>executable scripts</em></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Act 4 &mdash; 3 minutes</div>
+    <h3>Executable Remediation Scripts</h3>
+    <pre><code># Show generated scripts
+ls remediation-scripts/ | head -20
+
+# Examine a script
+cat remediation-scripts/*-remediate.sh | head -40
+
+# Safe preview with DRY_RUN
+DRY_RUN=true ./remediation-scripts/&lt;script&gt;-remediate.sh</code></pre>
+    <div class="narrative">"Every CRITICAL finding gets a dedicated remediation script &mdash; tailored to the specific resource, with real gcloud commands. DRY_RUN mode previews exactly what it will do. No changes until you're ready."</div>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Act 5 &mdash; 2 minutes (Optional)</div>
+    <h3>Live API Fetch</h3>
+    <pre><code>./gcp-security-analyzer fetch --org-id &lt;ORG_ID&gt; --days 7 -v</code></pre>
+    <div class="narrative">"This pulls findings directly from the Security Command Center API in real-time. It can be scheduled for continuous monitoring &mdash; no manual CSV exports."</div>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Act 6 &mdash; 2 minutes</div>
+    <h3>Advanced Capabilities</h3>
+    <pre><code># Filter by priority
+./gcp-security-analyzer analyze findings.csv -p critical,high
+
+# Filter by risk score
+./gcp-security-analyzer analyze findings.csv --min-risk-score 75
+
+# Split reports by priority
+./gcp-security-analyzer analyze findings.csv --split-by-priority -d ./reports
+
+# AI enhancement (optional)
+export ANTHROPIC_API_KEY="sk-ant-..."
+./gcp-security-analyzer analyze findings.csv --ai-enhance</code></pre>
+  </div>
+
+  <div class="act">
+    <div class="act-num">Closing &mdash; 1 minute</div>
+    <h3>Summary</h3>
+    <div class="narrative">"One command transforms thousands of raw SCC findings into a prioritized, scored, compliance-mapped security report with executable remediation scripts. It reduces our mean-time-to-remediate from days to hours for CRITICAL findings, ensures consistent prioritization across the team, and provides a complete audit trail with timestamped reports."</div>
+  </div>
+</section>
+
+<!-- ── Scoring Methodology ───────────────────────────────── -->
+<section>
+  <h2>3. Risk Scoring Methodology</h2>
+  <div class="card">
+    <p>Each finding is scored on a <strong>0&ndash;100 scale</strong> using six weighted components:</p>
+    <table>
+      <thead><tr><th>Component</th><th style="text-align:right">Max Points</th><th>How It Works</th></tr></thead>
+      <tbody>
+        <tr><td>Base Severity</td><td style="text-align:right"><code>40</code></td><td>CRITICAL=40, HIGH=30, MEDIUM=20, LOW=10</td></tr>
+        <tr><td>CVSS Score</td><td style="text-align:right"><code>30</code></td><td>CVSS v3 base score &times; 3</td></tr>
+        <tr><td>Exploitability</td><td style="text-align:right"><code>20</code></td><td>In-the-wild (+10), Zero-day (+8), Activity level (+2&ndash;6), Has CVE (+2)</td></tr>
+        <tr><td>Finding Class</td><td style="text-align:right"><code>10</code></td><td>THREAT=10, VULNERABILITY=7, MISCONFIG=5, OBSERVATION=2</td></tr>
+        <tr><td>Resource Exposure</td><td style="text-align:right"><code>10</code></td><td>Public IP (+5), Internet-facing (+3), Critical resource (+2)</td></tr>
+        <tr><td>Compliance Impact</td><td style="text-align:right"><code>10</code></td><td>Has frameworks (+5), Detailed compliance (+3), Audit category (+2)</td></tr>
+      </tbody>
+    </table>
+    <p>A <strong>category weight multiplier</strong> (0.8x&ndash;1.2x) is applied. A <strong>severity floor</strong> ensures GCP's CRITICAL (&ge;75) and HIGH (&ge;55) designations are never downgraded.</p>
+
+    <h4>Priority Thresholds &amp; SLAs</h4>
+    <table>
+      <thead><tr><th>Priority</th><th>Score Range</th><th>Remediation SLA</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge b-crit">CRITICAL</span></td><td>75 &ndash; 100</td><td>24&ndash;48 hours</td></tr>
+        <tr><td><span class="badge b-high">HIGH</span></td><td>55 &ndash; 74</td><td>1 week</td></tr>
+        <tr><td><span class="badge b-med">MEDIUM</span></td><td>35 &ndash; 54</td><td>30 days</td></tr>
+        <tr><td><span class="badge b-low">LOW</span></td><td>0 &ndash; 34</td><td>90 days</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── FAQ ────────────────────────────────────────────────── -->
+<section>
+  <h2>4. Frequently Asked Questions</h2>
+
+  <div class="faq-group">
+    <h3>General</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What is GCP Security Analyzer? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">A command-line tool written in Go that fetches security findings from Google Cloud's Security Command Center, scores them using a multi-factor risk algorithm, maps them to compliance frameworks, generates remediation guidance, and produces interactive reports with executable fix scripts.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Why not just use the GCP Security Command Center console directly? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">SCC provides raw findings but lacks quantitative risk scoring, cross-framework compliance mapping, executable remediation scripts, and customizable multi-format reporting. This tool adds those layers of intelligence on top of SCC data.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Does this replace Security Command Center? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">No. It complements SCC by consuming its findings and adding risk scoring, prioritization, compliance mapping, and automated remediation that SCC does not provide natively.</div>
+    </div>
+  </div>
+
+  <div class="faq-group">
+    <h3>Risk Scoring</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How are findings scored? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Each finding is scored on a 0&ndash;100 scale using six weighted components: Base Severity (40 pts), CVSS Score (30 pts), Exploitability (20 pts), Finding Class (10 pts), Resource Exposure (10 pts), and Compliance Impact (10 pts). A category weight multiplier (0.8x&ndash;1.2x) is applied to the raw sum, and a severity floor ensures GCP's own CRITICAL and HIGH designations are never downgraded.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can the scoring weights be customized? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Yes. The scoring engine accepts a configuration struct that can be tuned. Future versions will support YAML-based configuration files for easy customization.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is the scoring methodology transparent? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Fully. Every finding's risk score includes a component breakdown and a human-readable rationale string explaining exactly how the score was computed, including whether a severity floor was applied. No black boxes.</div>
+    </div>
+  </div>
+
+  <div class="faq-group">
+    <h3>Remediation</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What findings get remediation scripts? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">All CRITICAL-priority findings receive executable remediation scripts (bash or python). All findings &mdash; regardless of priority &mdash; receive remediation guidance including summary, next steps, estimated effort, and automation potential.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Are the scripts safe to run? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Every script supports a <code>DRY_RUN=true</code> mode that previews actions without making changes. Scripts use <code>set -euo pipefail</code> for error handling and include detailed inline comments. Always review scripts before executing in production.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What categories have specialized scripts? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">11 categories: VPC Flow Logs, Private Google Access, Bucket Logging, Audit Logging, Firewall Rule Logging, Open Firewalls, Weak SSL/TLS, Service Account Keys, IAM Anomalies, Container Vulnerabilities, and OS Vulnerabilities. All other categories receive a generic inspection script.</div>
+    </div>
+  </div>
+
+  <div class="faq-group">
+    <h3>Compliance</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Which compliance frameworks are supported? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">CIS Benchmarks, PCI-DSS, HIPAA, SOC 2, ISO 27001, NIST 800-53, and GDPR. The tool parses compliance data embedded in SCC findings and maps them to specific framework controls.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Does this tool certify compliance? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">No. It identifies and maps compliance-relevant findings to framework controls. It does not perform audits or grant certifications. Use it as evidence during audit preparation.</div>
+    </div>
+  </div>
+
+  <div class="faq-group">
+    <h3>Data &amp; Security</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Does any data leave our environment? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">By default, <strong>no</strong>. All processing happens locally on your workstation. The only exception is the optional <code>--ai-enhance</code> flag, which sends CRITICAL finding summaries to the Claude API. This requires explicit opt-in and an API key.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Are credentials stored by the tool? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">No. The tool uses GCP's standard Application Default Credentials (ADC) mechanism. No credentials are stored, logged, or transmitted by the tool itself.</div>
+    </div>
+  </div>
+
+  <div class="faq-group">
+    <h3>Operations</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can this be integrated into CI/CD? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Yes. The tool is a single binary with standard exit codes (0 = success, 1 = error). It can run in any CI/CD pipeline. The <code>fetch</code> command pulls live data without manual CSV exports.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How often should we run it? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Recommended: daily for CRITICAL/HIGH monitoring, weekly for full analysis. Timestamped output files create a natural audit trail without manual file management.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What are the infrastructure requirements? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">A single Go binary (~15MB). No database, no containers, no external services required. Runs on macOS, Linux, and Windows.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Does it support multiple GCP organizations? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">Yes. Pass different <code>--org-id</code> values to the <code>fetch</code> command. Each run produces independently named report files.</div>
+    </div>
+  </div>
+
+  <div class="faq-group">
+    <h3>AI Enhancement</h3>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What does --ai-enhance do? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">It sends CRITICAL finding details to the Claude API (Anthropic) for context-aware analysis. The AI provides deeper remediation recommendations, explains potential blast radius, and suggests related findings to investigate.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is --ai-enhance required? <span class="arrow">&#x25BC;</span></div>
+      <div class="faq-a">No. It is entirely optional and requires an <code>ANTHROPIC_API_KEY</code> environment variable. The tool is fully functional without it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Next Steps ────────────────────────────────────────── -->
+<section>
+  <h2>5. Recommended Next Steps</h2>
+  <ol class="steps">
+    <li><strong>Pilot</strong> &mdash; Run against one GCP organization for 2 weeks</li>
+    <li><strong>Validate</strong> &mdash; Compare risk scores against the team's manual prioritization</li>
+    <li><strong>Integrate</strong> &mdash; Add to weekly security review workflow</li>
+    <li><strong>Automate</strong> &mdash; Schedule daily fetch + report generation via cron or CI/CD</li>
+    <li><strong>Expand</strong> &mdash; Enable compliance mapping and AI enrichment for deeper analysis</li>
+  </ol>
+</section>
+
+<div class="footer">
+  Built with Go 1.24 &ensp;&middot;&ensp; Powered by GCP Security Command Center API &ensp;&middot;&ensp; Optional AI enrichment via Claude
+</div>
+
+</div>
+
+<script>
+function toggleFaq(el) {
+  var a = el.nextElementSibling;
+  var open = el.classList.toggle('open');
+  a.classList.toggle('open', open);
+}
+</script>
+</body>
+</html>

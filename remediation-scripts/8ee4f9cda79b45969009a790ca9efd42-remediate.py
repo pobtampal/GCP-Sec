@@ -4,7 +4,7 @@
 # Category:  CONTAINER_IMAGE_VULNERABILITY
 # Priority:  CRITICAL (risk score 77.76)
 # Resource:  projects/wanaware-core-stage/locations/us-central1/repositories/chisel-with-auth/dockerImages/chisel-with-auth@sha256:dacc631d9c1ecd2c6afa002d62eaeb039ba8295653749f4d73b5b8f453ea1e67
-# Project:   
+# Project:   940510641271
 # CVE:           CVE-2025-61732 (CVSS 8.6)
 # Generated: 2026-02-22
 # ============================================================

@@ -4,12 +4,12 @@
 # Category:  SERVICE ACCOUNT THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  projects/wanaware-core-prod/serviceAccounts/dratareadonly@wanaware-core-prod.iam.gserviceaccount.com
-# Project:   
+# Project:   503291607878
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="503291607878"
 RESOURCE="projects/wanaware-core-prod/serviceAccounts/dratareadonly@wanaware-core-prod.iam.gserviceaccount.com"
 CATEGORY="SERVICE ACCOUNT THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

@@ -4,7 +4,7 @@
 # Category:  CONTAINER_IMAGE_VULNERABILITY
 # Priority:  CRITICAL (risk score 94.80)
 # Resource:  projects/wanaware-core-stage/locations/us-central1/repositories/worker-service/dockerImages/worker-service@sha256:299f1c7d0756d764c797d9dfcf28c70fbb56f207531687dd77e1c8860ab79d81
-# Project:   
+# Project:   940510641271
 # CVE:           CVE-2025-68121 (CVSS 10.0)
 # Generated: 2026-02-22
 # ============================================================

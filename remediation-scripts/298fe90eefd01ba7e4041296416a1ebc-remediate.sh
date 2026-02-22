@@ -4,12 +4,12 @@
 # Category:  SERVICE ACCOUNT KEY THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  projects/wanaware-core-prod/serviceAccounts/tf-deploy@wanaware-core-prod.iam.gserviceaccount.com/keys/9d54fb9ab424fa5963c122f0f8c4365535eb8169
-# Project:   
+# Project:   503291607878
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="503291607878"
 RESOURCE="projects/wanaware-core-prod/serviceAccounts/tf-deploy@wanaware-core-prod.iam.gserviceaccount.com/keys/9d54fb9ab424fa5963c122f0f8c4365535eb8169"
 CATEGORY="SERVICE ACCOUNT KEY THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

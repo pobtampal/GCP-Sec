@@ -4,12 +4,12 @@
 # Category:  FIREWALL THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  default-allow-ssh
-# Project:   
+# Project:   885453410960
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="885453410960"
 RESOURCE="default-allow-ssh"
 CATEGORY="FIREWALL THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

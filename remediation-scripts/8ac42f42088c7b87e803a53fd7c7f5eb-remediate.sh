@@ -4,12 +4,12 @@
 # Category:  SERVICE ACCOUNT THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  projects/wanaware-dev/serviceAccounts/firebase-adminsdk-9xnmk@wanaware-dev.iam.gserviceaccount.com
-# Project:   
+# Project:   45062729948
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="45062729948"
 RESOURCE="projects/wanaware-dev/serviceAccounts/firebase-adminsdk-9xnmk@wanaware-dev.iam.gserviceaccount.com"
 CATEGORY="SERVICE ACCOUNT THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

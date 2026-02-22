@@ -4,12 +4,12 @@
 # Category:  FIREWALL THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  default-allow-rdp
-# Project:   
+# Project:   866233621206
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="866233621206"
 RESOURCE="default-allow-rdp"
 CATEGORY="FIREWALL THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

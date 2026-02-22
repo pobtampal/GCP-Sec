@@ -4,12 +4,12 @@
 # Category:  PUBLICLY ACCESSIBLE INSTANCE WITH PROJECT-WIDE SSH KEY.
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  fleet-manager-integration-test-vm
-# Project:   
+# Project:   866233621206
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="866233621206"
 RESOURCE="fleet-manager-integration-test-vm"
 CATEGORY="PUBLICLY ACCESSIBLE INSTANCE WITH PROJECT-WIDE SSH KEY."
 DRY_RUN=${DRY_RUN:-false}

@@ -4,13 +4,13 @@
 # Category:  SOFTWARE_VULNERABILITY
 # Priority:  CRITICAL (risk score 75.96)
 # Resource:  cluster-1
-# Project:   
+# Project:   45062729948
 # CVE:           CVE-2024-29415 (CVSS 8.1)
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="45062729948"
 RESOURCE="cluster-1"
 CATEGORY="SOFTWARE_VULNERABILITY"
 DRY_RUN=${DRY_RUN:-false}

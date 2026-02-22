@@ -4,7 +4,7 @@
 # Category:  CONTAINER_IMAGE_VULNERABILITY
 # Priority:  CRITICAL (risk score 77.76)
 # Resource:  projects/wanaware-core-stage/locations/us-central1/repositories/worker-management-service/dockerImages/worker-management-service@sha256:709696a28f2ef9e35757237f28c3c76bd38c46e2bb0c5bce2480690c657a561c
-# Project:   
+# Project:   940510641271
 # CVE:           CVE-2025-61732 (CVSS 8.6)
 # Generated: 2026-02-22
 # ============================================================

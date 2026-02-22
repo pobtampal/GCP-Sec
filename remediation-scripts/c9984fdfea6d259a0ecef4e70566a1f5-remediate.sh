@@ -4,12 +4,12 @@
 # Category:  USER-MANAGED KEYS TO SERVICE ACCOUNT WITH PERMISSIONS TO MODIFY THE METADATA INFORMATION OF AN INSTANCE.
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  projects/wa-gcp-test/serviceAccounts/885453410960-compute@developer.gserviceaccount.com
-# Project:   
+# Project:   885453410960
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="885453410960"
 RESOURCE="projects/wa-gcp-test/serviceAccounts/885453410960-compute@developer.gserviceaccount.com"
 CATEGORY="USER-MANAGED KEYS TO SERVICE ACCOUNT WITH PERMISSIONS TO MODIFY THE METADATA INFORMATION OF AN INSTANCE."
 DRY_RUN=${DRY_RUN:-false}

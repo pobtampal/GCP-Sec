@@ -4,12 +4,12 @@
 # Category:  POD THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  chisel-6fb5b877c6-4krgq
-# Project:   
+# Project:   503291607878
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="503291607878"
 RESOURCE="chisel-6fb5b877c6-4krgq"
 CATEGORY="POD THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

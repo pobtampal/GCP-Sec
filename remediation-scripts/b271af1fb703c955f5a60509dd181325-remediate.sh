@@ -4,12 +4,12 @@
 # Category:  INSTANCE THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  gke-wanaware-deploym-primary-node-poo-4567e800-bit8
-# Project:   
+# Project:   866233621206
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="866233621206"
 RESOURCE="gke-wanaware-deploym-primary-node-poo-4567e800-bit8"
 CATEGORY="INSTANCE THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}

@@ -4,12 +4,12 @@
 # Category:  POD THAT EXPOSES MANY VALUED RESOURCES
 # Priority:  CRITICAL (risk score 75.00)
 # Resource:  airflow-worker-set-controller-5fd54bccd7-gkqlt
-# Project:   
+# Project:   62518548529
 # Generated: 2026-02-22
 # ============================================================
 set -euo pipefail
 
-PROJECT=""
+PROJECT="62518548529"
 RESOURCE="airflow-worker-set-controller-5fd54bccd7-gkqlt"
 CATEGORY="POD THAT EXPOSES MANY VALUED RESOURCES"
 DRY_RUN=${DRY_RUN:-false}
