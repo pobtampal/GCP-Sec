@@ -1,0 +1,31 @@
+title = "gcp-security-analyzer gitleaks config"
+
+[allowlist]
+  description = "Global allowlist"
+  # Ignore test fixtures and generated coverage data
+  paths = [
+    "coverage.out",
+    "testdata/",
+    "findings.csv",
+    "findings-report.*",
+    "critical-high.csv",
+  ]
+  # Ignore known-safe placeholder patterns in docs
+  regexes = [
+    "EXAMPLE_",
+    "YOUR_",
+  ]
+
+[[rules]]
+  id          = "gcp-service-account-key"
+  description = "GCP service account private key"
+  regex       = '''-----BEGIN (RSA |EC )?PRIVATE KEY-----'''
+  severity    = "CRITICAL"
+  tags        = ["gcp", "credentials"]
+
+[[rules]]
+  id          = "generic-api-key"
+  description = "Generic API key assignment"
+  regex       = '''(?i)(api[_-]?key|apikey|auth[_-]?token)\s*[:=]\s*["']?[A-Za-z0-9_\-]{20,}["']?'''
+  severity    = "HIGH"
+  tags        = ["credentials"]

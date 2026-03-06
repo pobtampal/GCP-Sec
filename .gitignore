@@ -1,0 +1,14 @@
+# SAST report output
+*.sarif
+*-report.json
+*-report.sarif
+gitleaks-report.*
+
+# Local scan results
+/tmp/sast-reports/
+
+# Trivy cache
+.trivy/
+
+# Semgrep cache
+.semgrep/

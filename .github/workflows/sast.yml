@@ -1,0 +1,245 @@
+name: SAST Security Scans
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  security-events: write   # Required to upload SARIF to GitHub Security tab
+
+env:
+  GO_VERSION: "1.23"
+  REPORT_DIR: /tmp/sast-reports
+
+jobs:
+  # ─── Job 1: Secret Scanning (Gitleaks) ───────────────────────────
+  gitleaks:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history so Gitleaks can scan all commits
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .gitleaks.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}   # Only needed for org-level scanning; omit for public repos
+
+      - name: Upload Gitleaks SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: gitleaks
+
+  # ─── Job 2: Static Code Analysis (Semgrep) ───────────────────────
+  semgrep:
+    name: Code Scan (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create report directory
+        run: mkdir -p ${{ env.REPORT_DIR }}
+
+      - name: Run Semgrep — custom rules
+        run: |
+          semgrep \
+            --config=.semgrep.yml \
+            --config=p/golang \
+            --config=p/owasp-top-ten \
+            --severity=ERROR \
+            --sarif \
+            --output=${{ env.REPORT_DIR }}/semgrep-report.sarif \
+            --error \
+            .
+        continue-on-error: false
+
+      - name: Upload Semgrep SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/semgrep-report.sarif
+          category: semgrep
+
+      - name: Upload Semgrep report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: ${{ env.REPORT_DIR }}/semgrep-report.sarif
+          retention-days: 90
+
+  # ─── Job 3: Dependency Vulnerability Scan (govulncheck) ──────────
+  govulncheck:
+    name: Dependency Scan (govulncheck)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Create report directory
+        run: mkdir -p ${{ env.REPORT_DIR }}
+
+      - name: Run govulncheck
+        run: |
+          govulncheck -json ./... \
+            > ${{ env.REPORT_DIR }}/govulncheck-report.json
+          # Also run in human-readable mode for the log
+          govulncheck ./...
+
+      - name: Upload govulncheck report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: govulncheck-report
+          path: ${{ env.REPORT_DIR }}/govulncheck-report.json
+          retention-days: 90
+
+  # ─── Job 4: Container / Filesystem Scan (Trivy) ──────────────────
+  trivy:
+    name: Container Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build binary (for filesystem scan)
+        run: go build -o gcp-security-analyzer .
+
+      - name: Create report directory
+        run: mkdir -p ${{ env.REPORT_DIR }}
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: ${{ env.REPORT_DIR }}/trivy-report.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: false
+
+      - name: Upload Trivy SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/trivy-report.sarif
+          category: trivy
+
+      - name: Upload Trivy report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: ${{ env.REPORT_DIR }}/trivy-report.sarif
+          retention-days: 90
+
+  # ─── Job 5: Upload Reports to GCS + Notify ───────────────────────
+  report-and-notify:
+    name: Upload Reports & Notify
+    runs-on: ubuntu-latest
+    needs: [gitleaks, semgrep, govulncheck, trivy]
+    # Run this job even when scans fail so reports are always uploaded
+    if: always()
+    steps:
+      - name: Download all scan artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/sast-reports
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Upload reports to GCS
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: /tmp/sast-reports
+          destination: >-
+            ${{ secrets.SAST_REPORT_BUCKET }}/${{
+              github.event.pull_request.head.sha || github.sha
+            }}
+          parent: false
+
+      - name: Compute overall scan status
+        id: status
+        run: |
+          GITLEAKS="${{ needs.gitleaks.result }}"
+          SEMGREP="${{ needs.semgrep.result }}"
+          GOVULN="${{ needs.govulncheck.result }}"
+          TRIVY="${{ needs.trivy.result }}"
+
+          if [[ "$GITLEAKS" == "success" && "$SEMGREP" == "success" \
+             && "$GOVULN" == "success" && "$TRIVY" == "success" ]]; then
+            echo "overall=PASSED" >> "$GITHUB_OUTPUT"
+            echo "emoji=✅" >> "$GITHUB_OUTPUT"
+          else
+            echo "overall=FAILED" >> "$GITHUB_OUTPUT"
+            echo "emoji=⛔" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.sendgrid.net
+          server_port: 465
+          username: apikey
+          password: ${{ secrets.SENDGRID_API_KEY }}
+          to: ${{ secrets.SECURITY_NOTIFY_EMAIL }}
+          from: ci@wanaware.com
+          subject: >-
+            ${{ steps.status.outputs.emoji }} SAST ${{
+              steps.status.outputs.overall }} — ${{
+              github.ref_name }} (${{ github.sha &&
+              github.sha[:7] || 'unknown' }})
+          body: |
+            Security scan completed for gcp-security-analyzer.
+
+            Branch : ${{ github.ref_name }}
+            Commit : ${{ github.sha }}
+            Actor  : ${{ github.actor }}
+            Status : ${{ steps.status.outputs.overall }}
+
+            Individual check results:
+              Gitleaks (secrets)        : ${{ needs.gitleaks.result }}
+              Semgrep (code analysis)   : ${{ needs.semgrep.result }}
+              govulncheck (deps)        : ${{ needs.govulncheck.result }}
+              Trivy (filesystem/deps)   : ${{ needs.trivy.result }}
+
+            GitHub Security tab (SARIF findings):
+            https://github.com/${{ github.repository }}/security/code-scanning
+
+            Full reports in GCS:
+            https://storage.googleapis.com/${{ secrets.SAST_REPORT_BUCKET }}/${{ github.sha }}/
+
+            Workflow run:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

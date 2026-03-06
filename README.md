@@ -2,6 +2,8 @@
 
 A production-ready Go CLI for analyzing [GCP Security Command Center](https://cloud.google.com/security-command-center) findings exported as CSV. It applies a multi-factor risk scoring algorithm, detects compliance violations, generates remediation guidance, and produces reports in Markdown, JSON, HTML, and CSV formats.
 
+**🔒 Integrated SAST security scanning** — Automated secret detection, static code analysis, dependency vulnerability scanning, and filesystem scanning via GitHub Actions.
+
 ---
 
 ## Features
@@ -46,6 +48,45 @@ make build
 ./dist/gcp-security-analyzer filter my-findings.csv \
   --priority high,critical \
   --output high-critical.csv
+```
+
+---
+
+## Security
+
+This repository integrates four automated SAST checks that run on every push and pull request via GitHub Actions (`.github/workflows/sast.yml`).
+
+| Check | Tool | What it catches |
+|---|---|---|
+| Secret scanning | Gitleaks | Hardcoded API keys, private keys, GCP credentials |
+| Static code analysis | Semgrep | Injection flaws, TLS misconfigs, sensitive data in logs |
+| Dependency CVEs | govulncheck | Known CVEs in Go module dependencies |
+| Filesystem / dep scan | Trivy | CVEs in Go dependencies and OS packages |
+
+Findings appear in the **Security → Code scanning** tab of this repository. Full JSON/SARIF reports for every build are stored in the GCS bucket configured via `SAST_REPORT_BUCKET`.
+
+### Running scans locally
+
+```bash
+# Install hooks (run once per clone)
+make setup-hooks
+
+# Run all SAST tools
+make sast
+
+# Run individual tools
+make gitleaks
+make semgrep
+make govulncheck
+make trivy-fs
+```
+
+To install the required tools:
+
+```bash
+brew install gitleaks trivy          # macOS
+pip install semgrep                  # all platforms
+go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
 
 ---

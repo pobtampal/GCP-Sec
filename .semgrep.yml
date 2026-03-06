@@ -1,0 +1,123 @@
+# Semgrep configuration for gcp-security-analyzer
+# Docs: https://semgrep.dev/docs/running-rules/
+
+rules:
+  # ── Credentials & secrets ─────────────────────────────────────────
+  - id: hardcoded-gcp-credential
+    patterns:
+      - pattern: |
+          $X := "$Y"
+      - metavariable-regex:
+          metavariable: $Y
+          regex: "AIza[0-9A-Za-z\\-_]{35}"
+    message: >
+      Hardcoded GCP API key detected in $X. Move this value to an
+      environment variable or Secret Manager.
+    severity: ERROR
+    languages: [go]
+    metadata:
+      cwe: "CWE-798"
+      owasp: "A02:2021"
+
+  - id: hardcoded-private-key-string
+    pattern: |
+      $X = "-----BEGIN RSA PRIVATE KEY-----..."
+    message: >
+      Hardcoded private key string. Use os.Getenv or load from a
+      secrets manager at runtime.
+    severity: ERROR
+    languages: [go]
+    metadata:
+      cwe: "CWE-321"
+
+  # ── Cryptographic weaknesses ──────────────────────────────────────
+  - id: weak-hash-md5
+    pattern: md5.New()
+    message: >
+      MD5 is cryptographically broken. Use sha256.New() or sha512.New()
+      for integrity checks, or bcrypt/argon2 for password hashing.
+    severity: WARNING
+    languages: [go]
+    metadata:
+      cwe: "CWE-327"
+      owasp: "A02:2021"
+
+  - id: weak-hash-sha1
+    pattern: sha1.New()
+    message: >
+      SHA-1 is deprecated for security use. Prefer SHA-256 or SHA-512.
+    severity: WARNING
+    languages: [go]
+    metadata:
+      cwe: "CWE-327"
+
+  # ── Command injection ─────────────────────────────────────────────
+  - id: exec-command-injection
+    patterns:
+      - pattern: exec.Command($CMD, ..., $ARG, ...)
+      - pattern-not: exec.Command("...", ...)
+    message: >
+      exec.Command called with a non-literal command or argument.
+      If $CMD or $ARG comes from user input or external data, this
+      is a command injection vulnerability.
+    severity: ERROR
+    languages: [go]
+    metadata:
+      cwe: "CWE-78"
+      owasp: "A03:2021"
+
+  # ── HTTP / TLS misconfigurations ──────────────────────────────────
+  - id: tls-insecure-skip-verify
+    pattern: |
+      tls.Config{..., InsecureSkipVerify: true, ...}
+    message: >
+      InsecureSkipVerify disables TLS certificate validation.
+      Remove this flag in production code.
+    severity: ERROR
+    languages: [go]
+    metadata:
+      cwe: "CWE-295"
+      owasp: "A02:2021"
+
+  - id: http-server-no-timeout
+    pattern: |
+      http.ListenAndServe($ADDR, $HANDLER)
+    message: >
+      http.ListenAndServe has no read/write timeouts. Use an
+      http.Server struct with explicit ReadTimeout and WriteTimeout
+      to prevent slowloris-style attacks.
+    severity: WARNING
+    languages: [go]
+    metadata:
+      cwe: "CWE-400"
+
+  # ── Sensitive data in logs ────────────────────────────────────────
+  - id: log-sensitive-field
+    patterns:
+      - pattern: log.$FUNC(..., $VAR, ...)
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: "(?i)(password|secret|token|key|credential)"
+    message: >
+      A variable with a sensitive-sounding name ($VAR) is being
+      logged. Ensure this does not contain secret material.
+    severity: WARNING
+    languages: [go]
+    metadata:
+      cwe: "CWE-532"
+      owasp: "A09:2021"
+
+  # ── File path traversal ───────────────────────────────────────────
+  - id: path-traversal-filepath-join
+    patterns:
+      - pattern: filepath.Join($BASE, $INPUT)
+      - pattern-not: filepath.Join("...", "...")
+    message: >
+      filepath.Join with a non-literal second argument may allow
+      path traversal if $INPUT comes from external data. Validate
+      and clean the path before use.
+    severity: WARNING
+    languages: [go]
+    metadata:
+      cwe: "CWE-22"
+      owasp: "A01:2021"

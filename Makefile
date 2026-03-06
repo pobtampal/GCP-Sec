@@ -4,7 +4,7 @@ BUILD_DIR := ./dist
 VERSION   := 1.0.0
 LDFLAGS   := -ldflags="-X main.version=$(VERSION) -s -w"
 
-.PHONY: all build test test-cover lint clean install run-sample run-fetch help
+.PHONY: all build test test-cover lint clean install run-sample run-fetch help setup-hooks sast govulncheck trivy-fs gitleaks semgrep
 
 all: build
 
@@ -89,3 +89,36 @@ stats-sample: build
 help:
 	@echo "Available targets:"
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
+
+## setup-hooks: Install pre-commit security hooks
+setup-hooks:
+	@cp .github/hooks/pre-commit .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "✓ Pre-commit hook installed. Run 'make setup-hooks' on each clone."
+
+## sast: Run all SAST checks locally (requires gitleaks, semgrep, govulncheck, trivy)
+sast:
+	@echo "=== Gitleaks ===" && gitleaks detect --config=.gitleaks.toml --verbose || true
+	@echo "=== Semgrep ===" && semgrep --config=.semgrep.yml --error . || true
+	@echo "=== govulncheck ===" && govulncheck ./... || true
+	@echo "=== Trivy (filesystem) ===" && trivy fs --severity HIGH,CRITICAL . || true
+
+## govulncheck: Scan Go dependencies for known CVEs
+govulncheck:
+	@which govulncheck > /dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest
+	govulncheck ./...
+
+## trivy-fs: Scan the filesystem for vulnerabilities (requires trivy)
+trivy-fs:
+	@which trivy > /dev/null 2>&1 || (echo "Install trivy: https://aquasecurity.github.io/trivy/"; exit 1)
+	trivy fs --severity HIGH,CRITICAL .
+
+## gitleaks: Scan the full repo history for leaked secrets
+gitleaks:
+	@which gitleaks > /dev/null 2>&1 || (echo "Install gitleaks: https://github.com/gitleaks/gitleaks"; exit 1)
+	gitleaks detect --config=.gitleaks.toml --verbose
+
+## semgrep: Run Semgrep static analysis
+semgrep:
+	@which semgrep > /dev/null 2>&1 || (echo "Install semgrep: pip install semgrep"; exit 1)
+	semgrep --config=.semgrep.yml --config=p/golang --severity=ERROR --error .
