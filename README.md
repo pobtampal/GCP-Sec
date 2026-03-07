@@ -417,3 +417,4 @@ Please ensure `make lint` and `make test` pass before submitting.
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
