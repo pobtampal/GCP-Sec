@@ -162,33 +162,18 @@ jobs:
           path: ${{ env.REPORT_DIR }}/trivy-report.sarif
           retention-days: 90
 
-  # ─── Job 5: Upload Reports to GCS + Notify ───────────────────────
+  # ─── Job 5: Notify ───────────────────────
   report-and-notify:
-    name: Upload Reports & Notify
+    name: Notify
     runs-on: ubuntu-latest
     needs: [gitleaks, semgrep, govulncheck, trivy]
-    # Run this job even when scans fail so reports are always uploaded
+    # Run this job even when scans fail so notifications are always sent
     if: always()
     steps:
       - name: Download all scan artifacts
         uses: actions/download-artifact@v4
         with:
           path: /tmp/sast-reports
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Upload reports to GCS
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: /tmp/sast-reports
-          destination: >-
-            ${{ secrets.SAST_REPORT_BUCKET }}/${{
-              github.event.pull_request.head.sha || github.sha
-            }}
-          parent: false
 
       - name: Compute overall scan status
         id: status
@@ -238,8 +223,5 @@ jobs:
             GitHub Security tab (SARIF findings):
             https://github.com/${{ github.repository }}/security/code-scanning
 
-            Full reports in GCS:
-            https://storage.googleapis.com/${{ secrets.SAST_REPORT_BUCKET }}/${{ github.sha }}/
-
-            Workflow run:
+            Full reports available in GitHub Actions artifacts:
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
