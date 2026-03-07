@@ -204,8 +204,7 @@ jobs:
           subject: >-
             ${{ steps.status.outputs.emoji }} SAST ${{
               steps.status.outputs.overall }} — ${{
-              github.ref_name }} (${{ github.sha &&
-              github.sha[:7] || 'unknown' }})
+              github.ref_name }} (${{ github.sha }})
           body: |
             Security scan completed for gcp-security-analyzer.
 
