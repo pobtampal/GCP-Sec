@@ -122,3 +122,7 @@ gitleaks:
 semgrep:
 	@which semgrep > /dev/null 2>&1 || (echo "Install semgrep: pip install semgrep"; exit 1)
 	semgrep --config=.semgrep.yml --config=p/golang --severity=ERROR --error .
+
+## report: Generate consolidated SAST report from local scan results
+report:
+	@./scripts/generate-report.sh
