@@ -79,7 +79,12 @@ make gitleaks
 make semgrep
 make govulncheck
 make trivy-fs
+
+# Generate reports manually
+make report
 ```
+
+**Note:** After installing hooks with `make setup-hooks`, SAST reports will be automatically generated in the `reports/` folder after each `git push`.
 
 To install the required tools:
 

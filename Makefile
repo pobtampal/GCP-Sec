@@ -90,11 +90,13 @@ help:
 	@echo "Available targets:"
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
 
-## setup-hooks: Install pre-commit security hooks
+## setup-hooks: Install pre-commit and post-push security hooks
 setup-hooks:
 	@cp .github/hooks/pre-commit .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
-	@echo "✓ Pre-commit hook installed. Run 'make setup-hooks' on each clone."
+	@cp .github/hooks/post-push .git/hooks/post-push
+	@chmod +x .git/hooks/post-push
+	@echo "✓ Pre-commit and post-push hooks installed. Run 'make setup-hooks' on each clone."
 
 ## sast: Run all SAST checks locally (requires gitleaks, semgrep, govulncheck, trivy)
 sast:

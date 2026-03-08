@@ -1,0 +1,26 @@
+#!/bin/bash
+# Post-push hook: generate SAST reports after each push
+# Install: cp .github/hooks/post-push .git/hooks/post-push && chmod +x .git/hooks/post-push
+
+set -euo pipefail
+
+echo "🔄 Generating SAST reports after push..."
+
+# Run the report generation
+if command -v make &> /dev/null; then
+    make report
+    echo "✅ SAST reports generated in reports/ folder"
+else
+    echo "⚠️  Make not found, running report script directly..."
+    if [ -f "scripts/generate-report.sh" ]; then
+        ./scripts/generate-report.sh
+        echo "✅ SAST reports generated in reports/ folder"
+    else
+        echo "❌ Report generation script not found"
+        exit 1
+    fi
+fi
+
+echo "📊 Reports available:"
+echo "   📄 Markdown: reports/sast-summary.md"
+echo "   🌐 HTML: reports/sast-summary.html"
