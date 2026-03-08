@@ -3,6 +3,8 @@
 *-report.json
 *-report.sarif
 gitleaks-report.*
+sast-summary.md
+sast-summary.html
 
 # Local scan results
 /tmp/sast-reports/
