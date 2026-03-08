@@ -187,20 +187,11 @@ jobs:
           #!/bin/bash
           set -euo pipefail
 
-          REPORT_FILE="sast-summary.md"
+          REPORT_MD_FILE="sast-summary.md"
+          REPORT_HTML_FILE="sast-summary.html"
           ARTIFACTS_DIR="/tmp/sast-reports"
           TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
           COMMIT_SHA="${GITHUB_SHA:0:7}"
-
-          # Start markdown report
-          cat > "$REPORT_FILE" << 'REPORT_HEADER'
-          # SAST Security Scan Report
-
-          ## Summary Table
-
-          | Tool | Status | Findings |
-          |------|--------|----------|
-          REPORT_HEADER
 
           # Helper function to count findings in a SARIF file
           count_sarif_findings() {
@@ -212,8 +203,8 @@ jobs:
             jq '[.runs[].results[] | select(.level != "note")] | length' "$file" 2>/dev/null || echo "0"
           }
 
-          # Helper function to extract and format SARIF findings
-          extract_sarif_findings() {
+          # Helper function to extract and format SARIF findings for Markdown
+          extract_sarif_findings_md() {
             local file="$1"
             
             if [ ! -f "$file" ]; then
@@ -236,7 +227,33 @@ jobs:
             fi
           }
 
-          # Process Gitleaks
+          # Helper function to extract and format SARIF findings for HTML
+          extract_sarif_findings_html() {
+            local file="$1"
+            
+            if [ ! -f "$file" ]; then
+              echo "    <p><em>No findings file found - scan may not have completed</em></p>"
+              return
+            fi
+            
+            local count=$(jq '[.runs[].results[] | select(.level != "note")] | length' "$file" 2>/dev/null || echo "0")
+            
+            if [ "$count" -eq 0 ]; then
+              echo "    <p>✅ No findings detected</p>"
+            else
+              echo "    <p>Found $count issue(s):</p>"
+              echo "    <ul>"
+              jq -r '.runs[].results[] | select(.level != "note") | 
+                "<li><strong>\(.ruleId // "unknown")</strong> [\(.level // "info")] — \(.message.text // "No description")</li>" |
+                head -10' "$file" 2>/dev/null || echo "      <li><em>Unable to parse results</em></li>"
+              if [ "$count" -gt 10 ]; then
+                echo "      <li>... and $((count - 10)) more findings (see full report for details)</li>"
+              fi
+              echo "    </ul>"
+            fi
+          }
+
+          # Process scan results
           if [ -f "$ARTIFACTS_DIR/gitleaks-report/results.sarif" ]; then
             GITLEAKS_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/gitleaks-report/results.sarif")
             GITLEAKS_EMOJI=$([ "$GITLEAKS_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
@@ -244,9 +261,7 @@ jobs:
             GITLEAKS_COUNT="N/A"
             GITLEAKS_EMOJI="⚪"
           fi
-          echo "| Gitleaks (Secrets) | $GITLEAKS_EMOJI $GITLEAKS_RESULT | $GITLEAKS_COUNT |" >> "$REPORT_FILE"
 
-          # Process Semgrep
           if [ -f "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" ]; then
             SEMGREP_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif")
             SEMGREP_EMOJI=$([ "$SEMGREP_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
@@ -254,9 +269,7 @@ jobs:
             SEMGREP_COUNT="N/A"
             SEMGREP_EMOJI="⚪"
           fi
-          echo "| Semgrep (Code) | $SEMGREP_EMOJI $SEMGREP_RESULT | $SEMGREP_COUNT |" >> "$REPORT_FILE"
 
-          # Process govulncheck
           if [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
             GOVULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
             GOVULN_EMOJI=$([ "$GOVULN_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
@@ -264,9 +277,7 @@ jobs:
             GOVULN_COUNT="N/A"
             GOVULN_EMOJI="⚪"
           fi
-          echo "| govulncheck (Deps) | $GOVULN_EMOJI $GOVULN_RESULT | $GOVULN_COUNT |" >> "$REPORT_FILE"
 
-          # Process Trivy
           if [ -f "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" ]; then
             TRIVY_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif")
             TRIVY_EMOJI=$([ "$TRIVY_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
@@ -274,79 +285,307 @@ jobs:
             TRIVY_COUNT="N/A"
             TRIVY_EMOJI="⚪"
           fi
-          echo "| Trivy (Filesystem) | $TRIVY_EMOJI $TRIVY_RESULT | $TRIVY_COUNT |" >> "$REPORT_FILE"
 
-          # Add detailed findings sections
-          cat >> "$REPORT_FILE" << 'FINDINGS_HEADER'
+          # Generate Markdown report
+          cat > "$REPORT_MD_FILE" << REPORT_HEADER
+# SAST Security Scan Report
 
-          ---
+## Summary Table
 
-          ## Detailed Findings
+| Tool | Status | Findings |
+|------|--------|----------|
+| Gitleaks (Secrets) | $GITLEAKS_EMOJI $GITLEAKS_RESULT | $GITLEAKS_COUNT |
+| Semgrep (Code) | $SEMGREP_EMOJI $SEMGREP_RESULT | $SEMGREP_COUNT |
+| govulncheck (Deps) | $GOVULN_EMOJI $GOVULN_RESULT | $GOVULN_COUNT |
+| Trivy (Filesystem) | $TRIVY_EMOJI $TRIVY_RESULT | $TRIVY_COUNT |
 
-          ### 🔐 Gitleaks (Secret Scanning)
+---
 
-          FINDINGS_HEADER
+## Detailed Findings
 
-          extract_sarif_findings "$ARTIFACTS_DIR/gitleaks-report/results.sarif" >> "$REPORT_FILE"
+### 🔐 Gitleaks (Secret Scanning)
 
-          cat >> "$REPORT_FILE" << 'FINDINGS_SEMGREP'
+REPORT_HEADER
 
-          ### 🔍 Semgrep (Static Code Analysis)
+          extract_sarif_findings_md "$ARTIFACTS_DIR/gitleaks-report/results.sarif" >> "$REPORT_MD_FILE"
 
-          FINDINGS_SEMGREP
+          cat >> "$REPORT_MD_FILE" << 'FINDINGS_SEMGREP'
 
-          extract_sarif_findings "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" >> "$REPORT_FILE"
+### 🔍 Semgrep (Static Code Analysis)
 
-          cat >> "$REPORT_FILE" << 'FINDINGS_GOVULN'
+FINDINGS_SEMGREP
 
-          ### 📦 govulncheck (Dependency Vulnerabilities)
+          extract_sarif_findings_md "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" >> "$REPORT_MD_FILE"
 
-          FINDINGS_GOVULN
+          cat >> "$REPORT_MD_FILE" << 'FINDINGS_GOVULN'
+
+### 📦 govulncheck (Dependency Vulnerabilities)
+
+FINDINGS_GOVULN
 
           if [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
             VULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
             if [ "$VULN_COUNT" -eq 0 ]; then
-              echo "  ✅ No vulnerabilities detected" >> "$REPORT_FILE"
+              echo "  ✅ No vulnerabilities detected" >> "$REPORT_MD_FILE"
             else
-              echo "  Found $VULN_COUNT vulnerabilities:" >> "$REPORT_FILE"
-              jq -r '.Vulns[]? | "  - **\(.OSV)** in `\(.PkgPath // "unknown")`\n    Range: \(.Affected[0].Range // "unknown") | Call: \(.Affected[0].Fixed // "unfixed")"' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null | head -20 >> "$REPORT_FILE" || echo "  *(Unable to parse results)*" >> "$REPORT_FILE"
+              echo "  Found $VULN_COUNT vulnerabilities:" >> "$REPORT_MD_FILE"
+              jq -r '.Vulns[]? | "  - **\(.OSV)** in `\(.PkgPath // "unknown")`\n    Range: \(.Affected[0].Range // "unknown") | Call: \(.Affected[0].Fixed // "unfixed")"' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null | head -20 >> "$REPORT_MD_FILE" || echo "  *(Unable to parse results)*" >> "$REPORT_MD_FILE"
               if [ "$VULN_COUNT" -gt 20 ]; then
-                echo "  ... and $((VULN_COUNT - 20)) more (see full report for details)" >> "$REPORT_FILE"
+                echo "  ... and $((VULN_COUNT - 20)) more (see full report for details)" >> "$REPORT_MD_FILE"
               fi
             fi
           else
-            echo "  *(No findings file found - scan may not have completed)*" >> "$REPORT_FILE"
+            echo "  *(No findings file found - scan may not have completed)*" >> "$REPORT_MD_FILE"
           fi
 
-          cat >> "$REPORT_FILE" << 'FINDINGS_TRIVY'
+          cat >> "$REPORT_MD_FILE" << 'FINDINGS_TRIVY'
 
-          ### 🐳 Trivy (Container & Filesystem Scan)
+### 🐳 Trivy (Container & Filesystem Scan)
 
-          FINDINGS_TRIVY
+FINDINGS_TRIVY
 
-          extract_sarif_findings "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" >> "$REPORT_FILE"
+          extract_sarif_findings_md "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" >> "$REPORT_MD_FILE"
 
-          # Add metadata footer
-          cat >> "$REPORT_FILE" << FOOTER
+          cat >> "$REPORT_MD_FILE" << FOOTER_MD
 
-          ---
+---
 
-          ## Metadata & Links
+## Metadata & Links
 
-          **Execution Details**
-          - Commit: [\`$COMMIT_SHA\`](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)
-          - Branch: \`$GITHUB_REF_NAME\`
-          - Actor: @$GITHUB_ACTOR
-          - Timestamp: $TIMESTAMP
-          - Workflow Run: [View on GitHub](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
+**Execution Details**
+- Commit: [\`$COMMIT_SHA\`](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)
+- Branch: \`$GITHUB_REF_NAME\`
+- Actor: @$GITHUB_ACTOR
+- Timestamp: $TIMESTAMP
+- Workflow Run: [View on GitHub](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
 
-          **Resources**
-          - [GitHub Security Code Scanning](https://github.com/$GITHUB_REPOSITORY/security/code-scanning)
-          - [Action Artifacts](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
+**Resources**
+- [GitHub Security Code Scanning](https://github.com/$GITHUB_REPOSITORY/security/code-scanning)
+- [Action Artifacts](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
 
-          FOOTER
+FOOTER_MD
 
-          echo "✅ Report generated successfully: $REPORT_FILE"
+          # Generate HTML report
+          cat > "$REPORT_HTML_FILE" << EOF_HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAST Security Scan Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 5px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            color: #7f8c8d;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .status-success { background-color: #27ae60; color: white; }
+        .status-failure { background-color: #e74c3c; color: white; }
+        .status-neutral { background-color: #95a5a6; color: white; }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            margin: 10px 0;
+        }
+        .metadata {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .metadata h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .metadata ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .metadata li {
+            margin: 5px 0;
+        }
+        .emoji {
+            font-size: 1.2em;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #bdc3c7;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 SAST Security Scan Report</h1>
+
+        <h2>📊 Summary Table</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tool</th>
+                    <th>Status</th>
+                    <th>Findings</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="emoji">🔐</span> Gitleaks (Secrets)</td>
+                    <td><span class="status-badge $([ "$GITLEAKS_RESULT" = "success" ] && echo "status-success" || echo "status-failure")">$GITLEAKS_EMOJI $GITLEAKS_RESULT</span></td>
+                    <td>$GITLEAKS_COUNT</td>
+                </tr>
+                <tr>
+                    <td><span class="emoji">🔍</span> Semgrep (Code)</td>
+                    <td><span class="status-badge $([ "$SEMGREP_RESULT" = "success" ] && echo "status-success" || echo "status-failure")">$SEMGREP_EMOJI $SEMGREP_RESULT</span></td>
+                    <td>$SEMGREP_COUNT</td>
+                </tr>
+                <tr>
+                    <td><span class="emoji">📦</span> govulncheck (Deps)</td>
+                    <td><span class="status-badge $([ "$GOVULN_RESULT" = "success" ] && echo "status-success" || echo "status-failure")">$GOVULN_EMOJI $GOVULN_RESULT</span></td>
+                    <td>$GOVULN_COUNT</td>
+                </tr>
+                <tr>
+                    <td><span class="emoji">🐳</span> Trivy (Filesystem)</td>
+                    <td><span class="status-badge $([ "$TRIVY_RESULT" = "success" ] && echo "status-success" || echo "status-failure")">$TRIVY_EMOJI $TRIVY_RESULT</span></td>
+                    <td>$TRIVY_COUNT</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>🔬 Detailed Findings</h2>
+
+        <h3>🔐 Gitleaks (Secret Scanning)</h3>
+EOF_HTML
+
+          extract_sarif_findings_html "$ARTIFACTS_DIR/gitleaks-report/results.sarif" >> "$REPORT_HTML_FILE"
+
+          cat >> "$REPORT_HTML_FILE" << 'HTML_SEMGREP'
+
+        <h3>🔍 Semgrep (Static Code Analysis)</h3>
+HTML_SEMGREP
+
+          extract_sarif_findings_html "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" >> "$REPORT_HTML_FILE"
+
+          cat >> "$REPORT_HTML_FILE" << 'HTML_GOVULN'
+
+        <h3>📦 govulncheck (Dependency Vulnerabilities)</h3>
+HTML_GOVULN
+
+          if [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
+            VULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
+            if [ "$VULN_COUNT" -eq 0 ]; then
+              echo "        <p>✅ No vulnerabilities detected</p>" >> "$REPORT_HTML_FILE"
+            else
+              echo "        <p>Found $VULN_COUNT vulnerabilities:</p>" >> "$REPORT_HTML_FILE"
+              echo "        <ul>" >> "$REPORT_HTML_FILE"
+              jq -r '.Vulns[]? | "<li><strong>\(.OSV)</strong> in <code>\(.PkgPath // "unknown")</code><br>Range: \(.Affected[0].Range // "unknown") | Call: \(.Affected[0].Fixed // "unfixed")</li>"' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null | head -20 >> "$REPORT_HTML_FILE" || echo "          <li><em>Unable to parse results</em></li>" >> "$REPORT_HTML_FILE"
+              if [ "$VULN_COUNT" -gt 20 ]; then
+                echo "          <li>... and $((VULN_COUNT - 20)) more (see full report for details)</li>" >> "$REPORT_HTML_FILE"
+              fi
+              echo "        </ul>" >> "$REPORT_HTML_FILE"
+            fi
+          else
+            echo "        <p><em>No findings file found - scan may not have completed</em></p>" >> "$REPORT_HTML_FILE"
+          fi
+
+          cat >> "$REPORT_HTML_FILE" << 'HTML_TRIVY'
+
+        <h3>🐳 Trivy (Container & Filesystem Scan)</h3>
+HTML_TRIVY
+
+          extract_sarif_findings_html "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" >> "$REPORT_HTML_FILE"
+
+          cat >> "$REPORT_HTML_FILE" << FOOTER_HTML
+
+        <div class="metadata">
+            <h4>📋 Execution Details</h4>
+            <ul>
+                <li><strong>Commit:</strong> <a href="https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"><code>$COMMIT_SHA</code></a></li>
+                <li><strong>Branch:</strong> <code>$GITHUB_REF_NAME</code></li>
+                <li><strong>Actor:</strong> @$GITHUB_ACTOR</li>
+                <li><strong>Timestamp:</strong> $TIMESTAMP</li>
+                <li><strong>Workflow Run:</strong> <a href="https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID">View on GitHub</a></li>
+            </ul>
+
+            <h4>🔗 Resources</h4>
+            <ul>
+                <li><a href="https://github.com/$GITHUB_REPOSITORY/security/code-scanning">GitHub Security Code Scanning</a></li>
+                <li><a href="https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID">Action Artifacts</a></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+FOOTER_HTML
+
+          echo "✅ Reports generated successfully:"
+          echo "   📄 Markdown: $REPORT_MD_FILE"
+          echo "   🌐 HTML: $REPORT_HTML_FILE"
           SCRIPT_EOF
 
           chmod +x /tmp/generate-report.sh
@@ -355,12 +594,14 @@ jobs:
           # Output report path for next steps
           echo "report_path=$(pwd)/sast-summary.md" >> "$GITHUB_OUTPUT"
 
-      - name: Upload consolidated report artifact
+      - name: Upload consolidated report artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sast-summary
-          path: sast-summary.md
+          path: |
+            sast-summary.md
+            sast-summary.html
           retention-days: 90
 
       - name: Read report for email
