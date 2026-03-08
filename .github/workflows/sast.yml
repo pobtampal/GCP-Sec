@@ -456,7 +456,7 @@ jobs:
           username: apikey
           password: ${{ secrets.SENDGRID_API_KEY }}
           to: ${{ secrets.SECURITY_NOTIFY_EMAIL }}
-          from: ci@wanaware.com
+          from: pobtampal@gmail.com
           subject: >-
             ${{ steps.status.outputs.emoji }} SAST ${{
               steps.status.outputs.overall }} — ${{
