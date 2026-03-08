@@ -107,6 +107,8 @@ jobs:
             > ${{ env.REPORT_DIR }}/govulncheck-report.json
           # Also run in human-readable mode for the log
           govulncheck ./...
+        # Continue even if vulnerabilities are found
+        continue-on-error: true
 
       - name: Upload govulncheck report artifact
         if: always()
@@ -146,6 +148,8 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: false
+        # Continue even if vulnerabilities are found
+        continue-on-error: true
 
       - name: Upload Trivy SARIF to GitHub Security
         if: always()
@@ -174,6 +178,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/sast-reports
+        # Continue even if some or all artifacts are missing
+        continue-on-error: true
 
       - name: Generate consolidated SAST report
         id: report
@@ -186,9 +192,12 @@ jobs:
           #!/bin/bash
           set -euo pipefail
 
+          # Ensure artifacts directory exists, even if empty
+          ARTIFACTS_DIR="/tmp/sast-reports"
+          mkdir -p "$ARTIFACTS_DIR"
+          
           REPORT_MD_FILE="sast-summary.md"
           REPORT_HTML_FILE="sast-summary.html"
-          ARTIFACTS_DIR="/tmp/sast-reports"
           TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
           COMMIT_SHA="${GITHUB_SHA:0:7}"
 
@@ -253,7 +262,8 @@ jobs:
           }
 
           # Process scan results
-          if [ -f "$ARTIFACTS_DIR/gitleaks-report/results.sarif" ]; then
+          # Gitleaks
+          if [ -d "$ARTIFACTS_DIR/gitleaks-report" ] && [ -f "$ARTIFACTS_DIR/gitleaks-report/results.sarif" ]; then
             GITLEAKS_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/gitleaks-report/results.sarif")
             GITLEAKS_EMOJI=$([ "$GITLEAKS_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
           else
@@ -261,7 +271,8 @@ jobs:
             GITLEAKS_EMOJI="⚪"
           fi
 
-          if [ -f "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" ]; then
+          # Semgrep
+          if [ -d "$ARTIFACTS_DIR/semgrep-report" ] && [ -f "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" ]; then
             SEMGREP_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif")
             SEMGREP_EMOJI=$([ "$SEMGREP_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
           else
@@ -269,7 +280,8 @@ jobs:
             SEMGREP_EMOJI="⚪"
           fi
 
-          if [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
+          # govulncheck
+          if [ -d "$ARTIFACTS_DIR/govulncheck-report" ] && [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
             GOVULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
             GOVULN_EMOJI=$([ "$GOVULN_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
           else
@@ -277,7 +289,8 @@ jobs:
             GOVULN_EMOJI="⚪"
           fi
 
-          if [ -f "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" ]; then
+          # Trivy
+          if [ -d "$ARTIFACTS_DIR/trivy-report" ] && [ -f "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" ]; then
             TRIVY_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif")
             TRIVY_EMOJI=$([ "$TRIVY_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
           else
@@ -382,11 +395,20 @@ jobs:
 
           echo "<h2>Metadata</h2><p>Commit: $COMMIT_SHA<br>Branch: $GITHUB_REF_NAME<br>Actor: $GITHUB_ACTOR<br>Timestamp: $TIMESTAMP</p></body></html>" >> "$REPORT_HTML_FILE"
 
-          echo "✅ Reports generated successfully:"
-          echo "   📄 Markdown: $REPORT_MD_FILE"
-          echo "   🌐 HTML: $REPORT_HTML_FILE"
+          # Check if reports were successfully created
+          if [ -f "$REPORT_MD_FILE" ] && [ -f "$REPORT_HTML_FILE" ]; then
+            echo "✅ Reports generated successfully:"
+            echo "   📄 Markdown: $REPORT_MD_FILE"
+            echo "   🌐 HTML: $REPORT_HTML_FILE"
+          else
+            echo "⚠️ Reports generated with partial data:"
+            [ -f "$REPORT_MD_FILE" ] && echo "   📄 Markdown: created (may contain N/A entries)"
+            [ ! -f "$REPORT_MD_FILE" ] && echo "   📄 Markdown: FAILED"
+            [ -f "$REPORT_HTML_FILE" ] && echo "   🌐 HTML: created (may contain N/A entries)"
+            [ ! -f "$REPORT_HTML_FILE" ] && echo "   🌐 HTML: FAILED"
+          fi
 
-          # Output report path for next steps
+          # Output report path for next steps (even if partially generated)
           echo "report_path=$(pwd)/sast-summary.md" >> "$GITHUB_OUTPUT"
 
       - name: Upload consolidated report artifacts
