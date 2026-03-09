@@ -60,10 +60,10 @@ This repository integrates four automated SAST checks that run on every push and
 |---|---|---|
 | Secret scanning | Gitleaks | Hardcoded API keys, private keys, GCP credentials |
 | Static code analysis | Semgrep | Injection flaws, TLS misconfigs, sensitive data in logs |
-| Dependency CVEs | govulncheck | Known CVEs in Go module dependencies |
+| Go security linting | gosec | SQL injection, unsafe crypto, file permissions, hardcoded creds |
 | Filesystem / dep scan | Trivy | CVEs in Go dependencies and OS packages |
 
-Findings appear in the **Security → Code scanning** tab of this repository. Full JSON/SARIF reports for every build are stored in the GCS bucket configured via `SAST_REPORT_BUCKET`.
+Findings appear in the **Security > Code scanning** tab of this repository. SARIF reports are uploaded to GitHub Security for each scan. Consolidated reports (Markdown + HTML) are automatically published to the [sast-report repository](https://github.com/pobtampal/sast-report) after every pipeline run.
 
 ### Running scans locally
 
@@ -77,21 +77,15 @@ make sast
 # Run individual tools
 make gitleaks
 make semgrep
-make govulncheck
 make trivy-fs
-
-# Generate reports manually
-make report
 ```
-
-**Note:** After installing hooks with `make setup-hooks`, SAST reports will be automatically generated in the `reports/` folder after each `git push`.
 
 To install the required tools:
 
 ```bash
 brew install gitleaks trivy          # macOS
 pip install semgrep                  # all platforms
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install github.com/securego/gosec/v2/cmd/gosec@latest
 ```
 
 ---
@@ -132,6 +126,16 @@ gcloud scc findings list YOUR_ORG_ID \
   --filter="state=ACTIVE" \
   > findings.csv
 ```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [DESIGN_SPEC.md](DESIGN_SPEC.md) | System architecture, data flow, scoring algorithm, CI/CD pipeline |
+| [METHODOLOGY.md](METHODOLOGY.md) | Detailed risk scoring methodology with examples |
+| [USAGE_GUIDE.md](USAGE_GUIDE.md) | Complete usage guide with configuration and advanced patterns |
 
 ---
 
@@ -234,6 +238,38 @@ gcp-security-analyzer filter findings.csv \
 
 # Pipe to other tools
 gcp-security-analyzer filter findings.csv -p critical | wc -l
+```
+
+---
+
+### `fetch` — Pull live findings from GCP SCC API
+
+```
+gcp-security-analyzer fetch [options]
+
+Options:
+      --org-id string     GCP organization ID (required)
+      --days int          Look-back window in days (default: 7)
+      --save-csv string   Save raw findings to CSV before analysis
+  -o, --output string     Output file path
+  -f, --format string     Output format: markdown, json, html, csv
+      --include-remediation  Include remediation steps
+      --include-compliance   Include compliance details
+```
+
+**Prerequisites:** `gcloud auth application-default login`
+
+**Examples:**
+
+```bash
+# Fetch and analyze last 7 days of findings
+gcp-security-analyzer fetch --org-id 123456789
+
+# Fetch last 30 days, save raw CSV, generate HTML report
+gcp-security-analyzer fetch --org-id 123456789 \
+  --days 30 \
+  --save-csv raw-findings.csv \
+  -f html -o dashboard.html
 ```
 
 ---
@@ -359,36 +395,54 @@ make run-all-formats
 
 ```
 gcp-security-analyzer/
-├── main.go                     # Entry point
+├── main.go                        # Entry point
 ├── go.mod
 ├── Makefile
 ├── README.md
-├── METHODOLOGY.md
-├── cmd/analyzer/               # CLI commands
-│   ├── root.go                 # Entry dispatcher and usage
-│   ├── analyze.go              # analyze command
-│   ├── filter.go               # filter command
-│   └── stats.go                # stats command
+├── METHODOLOGY.md                 # Risk scoring algorithm details
+├── USAGE_GUIDE.md                 # Detailed usage documentation
+├── DESIGN_SPEC.md                 # System design specification
+├── cmd/analyzer/                  # CLI commands
+│   ├── root.go                    # Entry dispatcher and usage
+│   ├── analyze.go                 # analyze command
+│   ├── fetch.go                   # fetch command (live GCP SCC API)
+│   ├── filter.go                  # filter command
+│   ├── stats.go                   # stats command
+│   └── pipeline.go                # Shared analysis pipeline
 ├── pkg/
-│   ├── parser/csv.go           # CSV parser
+│   ├── parser/csv.go              # CSV parser with column aliasing
 │   ├── scoring/
-│   │   ├── risk.go             # Risk scoring engine
-│   │   └── priorities.go       # Filtering and grouping helpers
+│   │   ├── risk.go                # Multi-factor risk scoring engine
+│   │   └── priorities.go          # Filtering and grouping helpers
 │   ├── compliance/
-│   │   ├── detector.go         # Violation detection and aggregation
-│   │   └── frameworks.go       # Known framework definitions
-│   ├── remediation/guidance.go # Remediation step generation
-│   └── report/
-│       ├── builder.go          # Report assembly
-│       ├── markdown.go         # Markdown generator
-│       ├── json.go             # JSON generator
-│       ├── html.go             # HTML generator
-│       └── csv.go              # CSV generator
+│   │   ├── detector.go            # Violation detection and aggregation
+│   │   └── frameworks.go          # Known framework definitions
+│   ├── remediation/
+│   │   ├── guidance.go            # Structured remediation steps
+│   │   └── scripts.go             # Automation script generation
+│   ├── report/
+│   │   ├── builder.go             # Report assembly and statistics
+│   │   ├── markdown.go            # Markdown generator
+│   │   ├── json.go                # JSON generator
+│   │   ├── html.go                # Interactive HTML dashboard
+│   │   └── csv.go                 # CSV generator with scored columns
+│   ├── fetcher/                   # GCP SCC API integration
+│   │   ├── fetcher.go             # Cloud SCC API client
+│   │   └── convert.go             # Protobuf → Finding conversion
+│   └── llm/                       # Optional AI enrichment
+│       └── enricher.go            # Claude API integration
 ├── internal/
-│   ├── models/                 # Core data structures
-│   └── utils/                  # Shared utilities (logger, helpers)
+│   ├── models/                    # Core data structures (Finding, Report, RiskScore)
+│   └── utils/                     # Logger, helpers, flag parsing
+├── .github/
+│   ├── hooks/pre-commit           # Gitleaks pre-commit hook
+│   └── workflows/
+│       ├── ci.yml                 # Test, build, release pipeline
+│       └── sast.yml               # SAST security scanning pipeline
+├── .gitleaks.toml                 # Secret scanning configuration
+├── .semgrep.yml                   # Custom static analysis rules
 └── testdata/
-    └── sample-findings.csv     # Sample CSV for testing
+    └── sample-findings.csv        # Sample GCP SCC findings for testing
 ```
 
 ---

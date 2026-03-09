@@ -4,7 +4,7 @@ BUILD_DIR := ./dist
 VERSION   := 1.0.0
 LDFLAGS   := -ldflags="-X main.version=$(VERSION) -s -w"
 
-.PHONY: all build test test-cover lint clean install run-sample run-fetch help setup-hooks sast govulncheck trivy-fs gitleaks semgrep
+.PHONY: all build test test-cover lint clean install run-sample run-fetch help setup-hooks sast gosec trivy-fs gitleaks semgrep
 
 all: build
 
@@ -98,17 +98,17 @@ setup-hooks:
 	@chmod +x .git/hooks/post-push
 	@echo "✓ Pre-commit and post-push hooks installed. Run 'make setup-hooks' on each clone."
 
-## sast: Run all SAST checks locally (requires gitleaks, semgrep, govulncheck, trivy)
+## sast: Run all SAST checks locally (requires gitleaks, semgrep, gosec, trivy)
 sast:
 	@echo "=== Gitleaks ===" && gitleaks detect --config=.gitleaks.toml --verbose || true
 	@echo "=== Semgrep ===" && semgrep --config=.semgrep.yml --error . || true
-	@echo "=== govulncheck ===" && govulncheck ./... || true
+	@echo "=== gosec ===" && gosec ./... || true
 	@echo "=== Trivy (filesystem) ===" && trivy fs --severity HIGH,CRITICAL . || true
 
-## govulncheck: Scan Go dependencies for known CVEs
-govulncheck:
-	@which govulncheck > /dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest
-	govulncheck ./...
+## gosec: Run Go security linter
+gosec:
+	@which gosec > /dev/null 2>&1 || go install github.com/securego/gosec/v2/cmd/gosec@latest
+	gosec ./...
 
 ## trivy-fs: Scan the filesystem for vulnerabilities (requires trivy)
 trivy-fs:
