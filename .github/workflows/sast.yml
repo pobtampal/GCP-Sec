@@ -143,13 +143,13 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Create report directory
-        run: mkdir -p ${{ env.REPORT_DIR }}
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Run gosec
-        uses: securego/gosec@master
-        with:
-          args: -fmt sarif -out ${{ env.REPORT_DIR }}/gosec-report.sarif -severity medium ./...
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}
+          gosec -fmt sarif -out ${{ env.REPORT_DIR }}/gosec-report.sarif -severity medium ./... || true
         continue-on-error: true
 
       - name: Upload gosec SARIF to GitHub Security
