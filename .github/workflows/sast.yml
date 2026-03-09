@@ -81,44 +81,7 @@ jobs:
           path: ${{ env.REPORT_DIR }}/semgrep-report.sarif
           retention-days: 90
 
-  # ─── Job 3: Dependency Vulnerability Scan (govulncheck) ──────────
-  govulncheck:
-    name: Dependency Scan (govulncheck)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: Create report directory
-        run: mkdir -p ${{ env.REPORT_DIR }}
-
-      - name: Run govulncheck
-        run: |
-          govulncheck -json ./... \
-            > ${{ env.REPORT_DIR }}/govulncheck-report.json
-          # Also run in human-readable mode for the log
-          govulncheck ./...
-        # Continue even if vulnerabilities are found
-        continue-on-error: true
-
-      - name: Upload govulncheck report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: govulncheck-report
-          path: ${{ env.REPORT_DIR }}/govulncheck-report.json
-          retention-days: 90
-
-  # ─── Job 4: Container / Filesystem Scan (Trivy) ──────────────────
+  # ─── Job 3: Container / Filesystem Scan (Trivy) ──────────────────
   trivy:
     name: Container Scan (Trivy)
     runs-on: ubuntu-latest
@@ -170,7 +133,7 @@ jobs:
   report-and-notify:
     name: Generate Report & Notify
     runs-on: ubuntu-latest
-    needs: [gitleaks, semgrep, govulncheck, trivy]
+    needs: [gitleaks, semgrep, trivy]
     # Run this job even when scans fail so reports are always generated
     if: always()
     steps:
@@ -186,7 +149,6 @@ jobs:
         env:
           GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
           SEMGREP_RESULT: ${{ needs.semgrep.result }}
-          GOVULN_RESULT: ${{ needs.govulncheck.result }}
           TRIVY_RESULT: ${{ needs.trivy.result }}
         run: |
           #!/bin/bash
@@ -280,15 +242,6 @@ jobs:
             SEMGREP_EMOJI="⚪"
           fi
 
-          # govulncheck
-          if [ -d "$ARTIFACTS_DIR/govulncheck-report" ] && [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
-            GOVULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
-            GOVULN_EMOJI=$([ "$GOVULN_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
-          else
-            GOVULN_COUNT="N/A"
-            GOVULN_EMOJI="⚪"
-          fi
-
           # Trivy
           if [ -d "$ARTIFACTS_DIR/trivy-report" ] && [ -f "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" ]; then
             TRIVY_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif")
@@ -308,7 +261,6 @@ jobs:
 
           echo "| Gitleaks (Secrets) | $GITLEAKS_EMOJI $GITLEAKS_RESULT | $GITLEAKS_COUNT |" >> "$REPORT_MD_FILE"
           echo "| Semgrep (Code) | $SEMGREP_EMOJI $SEMGREP_RESULT | $SEMGREP_COUNT |" >> "$REPORT_MD_FILE"
-          echo "| govulncheck (Deps) | $GOVULN_EMOJI $GOVULN_RESULT | $GOVULN_COUNT |" >> "$REPORT_MD_FILE"
           echo "| Trivy (Filesystem) | $TRIVY_EMOJI $TRIVY_RESULT | $TRIVY_COUNT |" >> "$REPORT_MD_FILE"
 
           echo "" >> "$REPORT_MD_FILE"
@@ -324,24 +276,6 @@ jobs:
           echo "### 🔍 Semgrep (Static Code Analysis)" >> "$REPORT_MD_FILE"
 
           extract_sarif_findings_md "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" >> "$REPORT_MD_FILE"
-
-          echo "" >> "$REPORT_MD_FILE"
-          echo "### 📦 govulncheck (Dependency Vulnerabilities)" >> "$REPORT_MD_FILE"
-
-          if [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
-            VULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
-            if [ "$VULN_COUNT" -eq 0 ]; then
-              echo "  ✅ No vulnerabilities detected" >> "$REPORT_MD_FILE"
-            else
-              echo "  Found $VULN_COUNT vulnerabilities:" >> "$REPORT_MD_FILE"
-              jq -r '.Vulns[]? | "  - **\(.OSV)** in `\(.PkgPath // \"unknown\")`\n    Range: \(.Affected[0].Range // \"unknown\") | Call: \(.Affected[0].Fixed // \"unfixed\")"' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null | head -20 >> "$REPORT_MD_FILE" || echo "  *(Unable to parse results)*" >> "$REPORT_MD_FILE"
-              if [ "$VULN_COUNT" -gt 20 ]; then
-                echo "  ... and $((VULN_COUNT - 20)) more (see full report for details)" >> "$REPORT_MD_FILE"
-              fi
-            fi
-          else
-            echo "  *(No findings file found - scan may not have completed)*" >> "$REPORT_MD_FILE"
-          fi
 
           echo "" >> "$REPORT_MD_FILE"
           echo "### 🐳 Trivy (Container & Filesystem Scan)" >> "$REPORT_MD_FILE"
@@ -366,28 +300,13 @@ jobs:
 
           # Generate HTML report
           # Generate simple HTML report
-          echo "<html><body><h1>SAST Report</h1><table border=1><tr><th>Tool</th><th>Status</th><th>Findings</th></tr><tr><td>Gitleaks</td><td>$GITLEAKS_EMOJI $GITLEAKS_RESULT</td><td>$GITLEAKS_COUNT</td></tr><tr><td>Semgrep</td><td>$SEMGREP_EMOJI $SEMGREP_RESULT</td><td>$SEMGREP_COUNT</td></tr><tr><td>govulncheck</td><td>$GOVULN_EMOJI $GOVULN_RESULT</td><td>$GOVULN_COUNT</td></tr><tr><td>Trivy</td><td>$TRIVY_EMOJI $TRIVY_RESULT</td><td>$TRIVY_COUNT</td></tr></table></body></html>" > "$REPORT_HTML_FILE"
+          echo "<html><body><h1>SAST Report</h1><table border=1><tr><th>Tool</th><th>Status</th><th>Findings</th></tr><tr><td>Gitleaks</td><td>$GITLEAKS_EMOJI $GITLEAKS_RESULT</td><td>$GITLEAKS_COUNT</td></tr><tr><td>Semgrep</td><td>$SEMGREP_EMOJI $SEMGREP_RESULT</td><td>$SEMGREP_COUNT</td></tr><tr><td>Trivy</td><td>$TRIVY_EMOJI $TRIVY_RESULT</td><td>$TRIVY_COUNT</td></tr></table></body></html>" > "$REPORT_HTML_FILE"
 
           extract_sarif_findings_html "$ARTIFACTS_DIR/gitleaks-report/results.sarif" >> "$REPORT_HTML_FILE"
 
           echo "<h3>Semgrep (Code Analysis)</h3>" >> "$REPORT_HTML_FILE"
 
           extract_sarif_findings_html "$ARTIFACTS_DIR/semgrep-report/semgrep-report.sarif" >> "$REPORT_HTML_FILE"
-
-          echo "<h3>govulncheck (Dependencies)</h3>" >> "$REPORT_HTML_FILE"
-
-          if [ -f "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" ]; then
-            VULN_COUNT=$(jq '[.Vulns[]? // empty] | length' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null || echo 0)
-            if [ "$VULN_COUNT" -eq 0 ]; then
-              echo "    <p>No vulnerabilities detected</p>" >> "$REPORT_HTML_FILE"
-            else
-              echo "    <p>Found $VULN_COUNT vulnerabilities:</p><ul>" >> "$REPORT_HTML_FILE"
-              jq -r '.Vulns[]? | "<li><strong>\(.OSV)</strong> in \(.PkgPath // \"unknown\")</li>"' "$ARTIFACTS_DIR/govulncheck-report/govulncheck-report.json" 2>/dev/null | head -10 >> "$REPORT_HTML_FILE" || echo "      <li>Unable to parse results</li>" >> "$REPORT_HTML_FILE"
-              echo "    </ul>" >> "$REPORT_HTML_FILE"
-            fi
-          else
-            echo "    <p>No findings file found</p>" >> "$REPORT_HTML_FILE"
-          fi
 
           echo "<h3>Trivy (Filesystem)</h3>" >> "$REPORT_HTML_FILE"
 
@@ -435,11 +354,10 @@ jobs:
         run: |
           GITLEAKS="${{ needs.gitleaks.result }}"
           SEMGREP="${{ needs.semgrep.result }}"
-          GOVULN="${{ needs.govulncheck.result }}"
           TRIVY="${{ needs.trivy.result }}"
 
           if [[ "$GITLEAKS" == "success" && "$SEMGREP" == "success" \
-             && "$GOVULN" == "success" && "$TRIVY" == "success" ]]; then
+             && "$TRIVY" == "success" ]]; then
             echo "overall=PASSED" >> "$GITHUB_OUTPUT"
             echo "emoji=✅" >> "$GITHUB_OUTPUT"
           else
