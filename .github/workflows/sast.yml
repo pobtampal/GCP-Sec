@@ -447,6 +447,31 @@ jobs:
             echo "emoji=⛔" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Stage reports for publishing
+        if: always()
+        run: |
+          mkdir -p /tmp/publish-reports
+          [ -f sast-summary.md ] && cp sast-summary.md /tmp/publish-reports/
+          [ -f sast-summary.html ] && cp sast-summary.html /tmp/publish-reports/
+          if [ -d /tmp/sast-reports ]; then
+            cp -r /tmp/sast-reports/* /tmp/publish-reports/ 2>/dev/null || true
+          fi
+          ls -la /tmp/publish-reports/
+
+      - name: Publish reports to sast-report repo
+        if: always()
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.REPORT_REPO_DEPLOY_KEY }}
+        with:
+          source-directory: /tmp/publish-reports
+          destination-github-username: pobtampal
+          destination-repository-name: sast-report
+          target-directory: reports/${{ github.sha }}
+          commit-message: >-
+            SAST report: ${{ github.ref_name }} @ ${{ github.sha }}
+            — Status: ${{ steps.status.outputs.overall }}
+
       - name: Send email notification with report
         if: always()
         uses: dawidd6/action-send-mail@v3
