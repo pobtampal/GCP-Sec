@@ -129,11 +129,49 @@ jobs:
           path: ${{ env.REPORT_DIR }}/trivy-report.sarif
           retention-days: 90
 
+  # ─── Job 4: Go Security Linter (gosec) ───────────────────────────
+  gosec:
+    name: Go Security Lint (gosec)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Create report directory
+        run: mkdir -p ${{ env.REPORT_DIR }}
+
+      - name: Run gosec
+        uses: securego/gosec@master
+        with:
+          args: -fmt sarif -out ${{ env.REPORT_DIR }}/gosec-report.sarif -severity medium ./...
+        continue-on-error: true
+
+      - name: Upload gosec SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/gosec-report.sarif
+          category: gosec
+
+      - name: Upload gosec report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosec-report
+          path: ${{ env.REPORT_DIR }}/gosec-report.sarif
+          retention-days: 90
+
   # ─── Job 5: Generate Report & Notify ──────────────────────
   report-and-notify:
     name: Generate Report & Notify
     runs-on: ubuntu-latest
-    needs: [gitleaks, semgrep, trivy]
+    needs: [gitleaks, semgrep, trivy, gosec]
     # Run this job even when scans fail so reports are always generated
     if: always()
     steps:
@@ -150,6 +188,7 @@ jobs:
           GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
           SEMGREP_RESULT: ${{ needs.semgrep.result }}
           TRIVY_RESULT: ${{ needs.trivy.result }}
+          GOSEC_RESULT: ${{ needs.gosec.result }}
         run: |
           #!/bin/bash
           set -euo pipefail
@@ -251,6 +290,15 @@ jobs:
             TRIVY_EMOJI="⚪"
           fi
 
+          # gosec
+          if [ -d "$ARTIFACTS_DIR/gosec-report" ] && [ -f "$ARTIFACTS_DIR/gosec-report/gosec-report.sarif" ]; then
+            GOSEC_COUNT=$(count_sarif_findings "$ARTIFACTS_DIR/gosec-report/gosec-report.sarif")
+            GOSEC_EMOJI=$([ "$GOSEC_COUNT" -eq 0 ] && echo "✅" || echo "⚠️")
+          else
+            GOSEC_COUNT="N/A"
+            GOSEC_EMOJI="⚪"
+          fi
+
           # Generate Markdown report
           echo "# SAST Security Scan Report" > "$REPORT_MD_FILE"
           echo "" >> "$REPORT_MD_FILE"
@@ -262,6 +310,7 @@ jobs:
           echo "| Gitleaks (Secrets) | $GITLEAKS_EMOJI $GITLEAKS_RESULT | $GITLEAKS_COUNT |" >> "$REPORT_MD_FILE"
           echo "| Semgrep (Code) | $SEMGREP_EMOJI $SEMGREP_RESULT | $SEMGREP_COUNT |" >> "$REPORT_MD_FILE"
           echo "| Trivy (Filesystem) | $TRIVY_EMOJI $TRIVY_RESULT | $TRIVY_COUNT |" >> "$REPORT_MD_FILE"
+          echo "| gosec (Go Security) | $GOSEC_EMOJI $GOSEC_RESULT | $GOSEC_COUNT |" >> "$REPORT_MD_FILE"
 
           echo "" >> "$REPORT_MD_FILE"
           echo "---" >> "$REPORT_MD_FILE"
@@ -283,6 +332,11 @@ jobs:
           extract_sarif_findings_md "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" >> "$REPORT_MD_FILE"
 
           echo "" >> "$REPORT_MD_FILE"
+          echo "### 🛡️ gosec (Go Security Linter)" >> "$REPORT_MD_FILE"
+
+          extract_sarif_findings_md "$ARTIFACTS_DIR/gosec-report/gosec-report.sarif" >> "$REPORT_MD_FILE"
+
+          echo "" >> "$REPORT_MD_FILE"
           echo "---" >> "$REPORT_MD_FILE"
           echo "" >> "$REPORT_MD_FILE"
           echo "## Metadata & Links" >> "$REPORT_MD_FILE"
@@ -300,7 +354,7 @@ jobs:
 
           # Generate HTML report
           # Generate simple HTML report
-          echo "<html><body><h1>SAST Report</h1><table border=1><tr><th>Tool</th><th>Status</th><th>Findings</th></tr><tr><td>Gitleaks</td><td>$GITLEAKS_EMOJI $GITLEAKS_RESULT</td><td>$GITLEAKS_COUNT</td></tr><tr><td>Semgrep</td><td>$SEMGREP_EMOJI $SEMGREP_RESULT</td><td>$SEMGREP_COUNT</td></tr><tr><td>Trivy</td><td>$TRIVY_EMOJI $TRIVY_RESULT</td><td>$TRIVY_COUNT</td></tr></table></body></html>" > "$REPORT_HTML_FILE"
+          echo "<html><body><h1>SAST Report</h1><table border=1><tr><th>Tool</th><th>Status</th><th>Findings</th></tr><tr><td>Gitleaks</td><td>$GITLEAKS_EMOJI $GITLEAKS_RESULT</td><td>$GITLEAKS_COUNT</td></tr><tr><td>Semgrep</td><td>$SEMGREP_EMOJI $SEMGREP_RESULT</td><td>$SEMGREP_COUNT</td></tr><tr><td>Trivy</td><td>$TRIVY_EMOJI $TRIVY_RESULT</td><td>$TRIVY_COUNT</td></tr><tr><td>gosec</td><td>$GOSEC_EMOJI $GOSEC_RESULT</td><td>$GOSEC_COUNT</td></tr></table></body></html>" > "$REPORT_HTML_FILE"
 
           extract_sarif_findings_html "$ARTIFACTS_DIR/gitleaks-report/results.sarif" >> "$REPORT_HTML_FILE"
 
@@ -311,6 +365,10 @@ jobs:
           echo "<h3>Trivy (Filesystem)</h3>" >> "$REPORT_HTML_FILE"
 
           extract_sarif_findings_html "$ARTIFACTS_DIR/trivy-report/trivy-report.sarif" >> "$REPORT_HTML_FILE"
+
+          echo "<h3>gosec (Go Security)</h3>" >> "$REPORT_HTML_FILE"
+
+          extract_sarif_findings_html "$ARTIFACTS_DIR/gosec-report/gosec-report.sarif" >> "$REPORT_HTML_FILE"
 
           echo "<h2>Metadata</h2><p>Commit: $COMMIT_SHA<br>Branch: $GITHUB_REF_NAME<br>Actor: $GITHUB_ACTOR<br>Timestamp: $TIMESTAMP</p></body></html>" >> "$REPORT_HTML_FILE"
 
@@ -355,9 +413,10 @@ jobs:
           GITLEAKS="${{ needs.gitleaks.result }}"
           SEMGREP="${{ needs.semgrep.result }}"
           TRIVY="${{ needs.trivy.result }}"
+          GOSEC="${{ needs.gosec.result }}"
 
           if [[ "$GITLEAKS" == "success" && "$SEMGREP" == "success" \
-             && "$TRIVY" == "success" ]]; then
+             && "$TRIVY" == "success" && "$GOSEC" == "success" ]]; then
             echo "overall=PASSED" >> "$GITHUB_OUTPUT"
             echo "emoji=✅" >> "$GITHUB_OUTPUT"
           else
