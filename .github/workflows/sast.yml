@@ -149,8 +149,9 @@ jobs:
       - name: Run gosec
         run: |
           mkdir -p ${{ env.REPORT_DIR }}
-          gosec -fmt sarif -out ${{ env.REPORT_DIR }}/gosec-report.sarif -severity medium ./... || true
-        continue-on-error: true
+          gosec -fmt=sarif -out=${{ env.REPORT_DIR }}/gosec-report.sarif ./... || true
+          echo "--- gosec output file check ---"
+          ls -la ${{ env.REPORT_DIR }}/gosec-report.sarif || echo "SARIF file not created"
 
       - name: Upload gosec SARIF to GitHub Security
         if: always()
