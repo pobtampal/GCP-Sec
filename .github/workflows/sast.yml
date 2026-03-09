@@ -450,13 +450,13 @@ jobs:
       - name: Stage reports for publishing
         if: always()
         run: |
-          mkdir -p /tmp/publish-reports
-          [ -f sast-summary.md ] && cp sast-summary.md /tmp/publish-reports/
-          [ -f sast-summary.html ] && cp sast-summary.html /tmp/publish-reports/
+          mkdir -p ${{ github.workspace }}/publish-reports
+          [ -f sast-summary.md ] && cp sast-summary.md ${{ github.workspace }}/publish-reports/
+          [ -f sast-summary.html ] && cp sast-summary.html ${{ github.workspace }}/publish-reports/
           if [ -d /tmp/sast-reports ]; then
-            cp -r /tmp/sast-reports/* /tmp/publish-reports/ 2>/dev/null || true
+            cp -r /tmp/sast-reports/* ${{ github.workspace }}/publish-reports/ 2>/dev/null || true
           fi
-          ls -la /tmp/publish-reports/
+          ls -la ${{ github.workspace }}/publish-reports/
 
       - name: Publish reports to sast-report repo
         if: always()
@@ -464,7 +464,7 @@ jobs:
         env:
           SSH_DEPLOY_KEY: ${{ secrets.REPORT_REPO_DEPLOY_KEY }}
         with:
-          source-directory: /tmp/publish-reports
+          source-directory: publish-reports
           destination-github-username: pobtampal
           destination-repository-name: sast-report
           target-directory: reports/${{ github.sha }}
