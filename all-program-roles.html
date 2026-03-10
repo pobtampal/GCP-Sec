@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GCP-Sec — Every Go File Explained</title>
+<style>
+:root {
+  --navy:     #0f172a;
+  --blue:     #2563eb;
+  --blue-bg:  #eff6ff;
+  --red:      #dc2626;
+  --red-bg:   #fef2f2;
+  --amber:    #b45309;
+  --amber-bg: #fffbeb;
+  --green:    #166534;
+  --green-bg: #f0fdf4;
+  --purple:   #7c3aed;
+  --purple-bg:#f5f3ff;
+  --teal:     #0f766e;
+  --teal-bg:  #f0fdfa;
+  --gray:     #64748b;
+  --gray-bg:  #f1f5f9;
+  --page-bg:  #f8fafc;
+  --card:     #ffffff;
+  --border:   #e2e8f0;
+  --t1:       #0f172a;
+  --t2:       #475569;
+  --t3:       #94a3b8;
+  --mono:     'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--t1);
+  background: var(--page-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ── Hero ──────────────────────────────────────── */
+.hero {
+  background: var(--navy);
+  color: #fff;
+  padding: 52px 44px;
+  border-radius: 14px;
+  margin-bottom: 40px;
+}
+.hero h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
+.hero .sub { font-size: 1rem; color: #94a3b8; max-width: 620px; }
+.badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.badge {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e2e8f0;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+/* ── TOC ───────────────────────────────────────── */
+.toc {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 28px;
+  margin-bottom: 44px;
+}
+.toc-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 14px;
+}
+.toc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 32px;
+}
+@media (max-width: 600px) { .toc-grid { grid-template-columns: 1fr; } }
+.toc-grid a {
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 0.88rem;
+  padding: 3px 0;
+  display: block;
+}
+.toc-grid a:hover { text-decoration: underline; }
+.toc-count {
+  display: inline-block;
+  background: var(--gray-bg);
+  color: var(--gray);
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ── Package group ────────────────────────────── */
+.pkg-group {
+  margin-bottom: 52px;
+}
+.pkg-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.pkg-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.pkg-meta { flex: 1; }
+.pkg-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.pkg-path {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+.pkg-desc {
+  font-size: 0.88rem;
+  color: var(--t2);
+  margin-top: 2px;
+}
+
+/* ── File card ────────────────────────────────── */
+.file-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.file-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--gray-bg);
+}
+.file-name {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--navy);
+  flex: 1;
+}
+.file-body {
+  padding: 16px 20px;
+}
+.file-summary {
+  font-size: 0.92rem;
+  color: var(--t2);
+  margin-bottom: 14px;
+  line-height: 1.65;
+}
+
+/* ── Responsibility list ──────────────────────── */
+.resp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.resp-item {
+  display: flex;
+  gap: 10px;
+  font-size: 0.87rem;
+}
+.resp-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 8px;
+}
+.resp-text { color: var(--t2); line-height: 1.55; }
+.resp-text strong { color: var(--navy); }
+
+/* ── Calls / Called-by ───────────────────────── */
+.rel-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+.rel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+.rel-tag {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Chip ─────────────────────────────────────── */
+.chip {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.chip-cmd    { background: #dbeafe; color: #1d4ed8; }
+.chip-pkg    { background: var(--purple-bg); color: var(--purple); }
+.chip-model  { background: var(--gray-bg); color: var(--gray); }
+.chip-util   { background: var(--teal-bg); color: var(--teal); }
+.chip-entry  { background: var(--amber-bg); color: var(--amber); }
+
+/* Package colour themes */
+.theme-entry  { --accent: #b45309; --accent-bg: #fffbeb; }
+.theme-cmd    { --accent: #1d4ed8; --accent-bg: #dbeafe; }
+.theme-fetch  { --accent: #166534; --accent-bg: #dcfce7; }
+.theme-parser { --accent: #0f766e; --accent-bg: #ccfbf1; }
+.theme-score  { --accent: #dc2626; --accent-bg: #fee2e2; }
+.theme-comp   { --accent: #b45309; --accent-bg: #fef3c7; }
+.theme-rem    { --accent: #0f766e; --accent-bg: #d1fae5; }
+.theme-llm    { --accent: #7c3aed; --accent-bg: #ede9fe; }
+.theme-report { --accent: #2563eb; --accent-bg: #dbeafe; }
+.theme-models { --accent: #475569; --accent-bg: #f1f5f9; }
+.theme-utils  { --accent: #0e7490; --accent-bg: #cffafe; }
+
+.pkg-icon[class*="theme-"] { background: var(--accent-bg); }
+.pkg-label[class*="theme-"] { color: var(--accent); }
+.rel-tag.calls { background: #eff6ff; color: #1d4ed8; }
+.rel-tag.used-by { background: #f0fdf4; color: #166534; }
+
+/* ── Divider ──────────────────────────────────── */
+hr.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 48px 0;
+}
+
+/* ── Dep map ──────────────────────────────────── */
+.dep-map {
+  background: var(--navy);
+  border-radius: 12px;
+  padding: 32px;
+  overflow-x: auto;
+}
+.dep-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.dep-box {
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  white-space: nowrap;
+  color: #fff;
+}
+.dep-arrow { color: #475569; font-size: 1rem; }
+.dep-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #475569;
+  margin: 18px 0 8px;
+}
+
+/* ── Footer ───────────────────────────────────── */
+.footer {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--t3);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ── Hero ──────────────────────────────────────── -->
+<div class="hero">
+  <h1>GCP-Sec — Every Go File Explained</h1>
+  <p class="sub">
+    A complete reference to the role, responsibilities, inputs, outputs, and relationships
+    of every Go source file in the project. Organised by package layer.
+  </p>
+  <div class="badge-row">
+    <span class="badge">35 Go files</span>
+    <span class="badge">11 packages</span>
+    <span class="badge">3 layers: cmd · pkg · internal</span>
+    <span class="badge">module: github.com/wanaware/GCP-Sec</span>
+  </div>
+</div>
+
+<!-- ── TOC ───────────────────────────────────────── -->
+<div class="toc">
+  <p class="toc-title">Jump to package</p>
+  <div class="toc-grid">
+    <a href="#entry">Entry point <span class="toc-count">1 file</span></a>
+    <a href="#cmd">cmd/analyzer — CLI commands <span class="toc-count">6 files</span></a>
+    <a href="#fetcher">pkg/fetcher — GCP API client <span class="toc-count">2 files</span></a>
+    <a href="#parser">pkg/parser — CSV parser <span class="toc-count">1 file</span></a>
+    <a href="#scoring">pkg/scoring — risk engine <span class="toc-count">2 files</span></a>
+    <a href="#compliance">pkg/compliance — framework mapping <span class="toc-count">2 files</span></a>
+    <a href="#remediation">pkg/remediation — fix guidance <span class="toc-count">2 files</span></a>
+    <a href="#llm">pkg/llm — AI enrichment <span class="toc-count">1 file</span></a>
+    <a href="#report">pkg/report — output writers <span class="toc-count">5 files</span></a>
+    <a href="#models">internal/models — data shapes <span class="toc-count">3 files</span></a>
+    <a href="#utils">internal/utils — shared helpers <span class="toc-count">3 files</span></a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- ENTRY POINT                                        -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-entry" id="entry">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-entry" style="background:#fffbeb;">📌</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-entry" style="color:#b45309;">Entry Point</p>
+      <p class="pkg-path">main.go</p>
+      <p class="pkg-desc">The single binary entry point — nothing more.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-entry">Entry</span>
+      <span class="file-name">main.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Contains only the <code style="font-family:var(--mono);font-size:0.85em;">main()</code> function.
+        Passes <code style="font-family:var(--mono);font-size:0.85em;">os.Args[1:]</code> to
+        <code style="font-family:var(--mono);font-size:0.85em;">analyzer.Execute()</code> and exits with
+        the integer return code. All real logic lives elsewhere — this file is intentionally trivial so the
+        CLI dispatcher can be tested independently of the OS process lifecycle.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item">
+          <div class="resp-dot" style="background:#b45309;"></div>
+          <div class="resp-text">Declares <strong>package main</strong> — makes this the binary entry point.</div>
+        </div>
+        <div class="resp-item">
+          <div class="resp-dot" style="background:#b45309;"></div>
+          <div class="resp-text">Hands off all arguments to <strong>analyzer.Execute()</strong> and propagates its exit code.</div>
+        </div>
+        <div class="resp-item">
+          <div class="resp-dot" style="background:#b45309;"></div>
+          <div class="resp-text">Intentionally contains zero business logic — the entire program can be exercised by calling Execute() directly in tests.</div>
+        </div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">cmd/analyzer.Execute()</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- CMD/ANALYZER                                       -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-cmd" id="cmd">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-cmd" style="background:#dbeafe;">🖥</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-cmd" style="color:#1d4ed8;">Command Layer</p>
+      <p class="pkg-path">cmd/analyzer/</p>
+      <p class="pkg-desc">Six files that collectively implement the CLI: routing, four user-facing commands, and the shared analysis pipeline that all commands share.</p>
+    </div>
+  </div>
+
+  <!-- root.go -->
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-cmd">Dispatcher</span>
+      <span class="file-name">root.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        The CLI router. <code style="font-family:var(--mono);font-size:0.85em;">Execute()</code> reads
+        the first argument and dispatches to the correct command handler. It also initialises the global
+        logger before any command runs, honouring <code style="font-family:var(--mono);font-size:0.85em;">--verbose</code> and
+        <code style="font-family:var(--mono);font-size:0.85em;">--debug</code> flags found anywhere in
+        the argument list.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Exposes <strong>Execute(args []string) int</strong> — the public entry point called by main.go.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Holds <strong>GlobalConfig</strong> (verbose flag + logger) shared by all subcommands.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Routes: <code style="font-family:var(--mono);font-size:0.82em;">analyze → runAnalyze</code>, <code style="font-family:var(--mono);font-size:0.82em;">fetch → runFetch</code>, <code style="font-family:var(--mono);font-size:0.82em;">stats → runStats</code>, <code style="font-family:var(--mono);font-size:0.82em;">filter → runFilter</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Handles <code style="font-family:var(--mono);font-size:0.82em;">help</code> and <code style="font-family:var(--mono);font-size:0.82em;">version</code> as built-in sub-commands, printing the full usage text.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Returns exit code 1 for unknown commands, 0 for help/version.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">main.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">runAnalyze · runFetch · runStats · runFilter</span>
+        <span class="rel-tag calls">internal/utils.NewLogger</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- analyze.go -->
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-cmd">Command</span>
+      <span class="file-name">analyze.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Implements the <strong>analyze</strong> command — the most commonly used entry point when
+        working with a CSV export from GCP Security Command Center. Also owns the shared
+        <code style="font-family:var(--mono);font-size:0.85em;">applyFilters()</code> and
+        <code style="font-family:var(--mono);font-size:0.85em;">resolveFormats()</code> helpers used
+        by the pipeline, as well as the terminal summary printer.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Defines <strong>AnalyzeFlags</strong> struct — holds every CLI flag value for the analyze/fetch commands.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Parses all CLI flags via <code style="font-family:var(--mono);font-size:0.82em;">flag.FlagSet</code> after separating the positional CSV path from named flags using <code style="font-family:var(--mono);font-size:0.82em;">utils.ExtractPositional</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Calls <code style="font-family:var(--mono);font-size:0.82em;">parser.ParseFile()</code> to load CSV data, then hands findings to <strong>runPipeline()</strong>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>applyFilters()</strong> — filters by priority, category, project, and risk-score range. Used by both analyze and filter commands.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>resolveFormats()</strong> — picks output formats: <code style="font-family:var(--mono);font-size:0.82em;">--formats</code> > <code style="font-family:var(--mono);font-size:0.82em;">--format</code> > default (markdown + html).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>printSummary()</strong> — prints the terminal dashboard (total/critical/high/medium/low counts, mean risk score, range).</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">pkg/parser.ParseFile</span>
+        <span class="rel-tag calls">pipeline.runPipeline</span>
+        <span class="rel-tag calls">internal/utils.ExtractPositional</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- fetch.go -->
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-cmd">Command</span>
+      <span class="file-name">fetch.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Implements the <strong>fetch</strong> command — the live API variant of analyze. Connects
+        to GCP Security Command Center in real time, retrieves all active findings within a configurable
+        lookback window, then routes them through the identical analysis pipeline as the analyze command.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Defines <strong>FetchFlags</strong> which embeds AnalyzeFlags, adding <code style="font-family:var(--mono);font-size:0.82em;">--org-id</code>, <code style="font-family:var(--mono);font-size:0.82em;">--days</code>, and <code style="font-family:var(--mono);font-size:0.82em;">--save-csv</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Creates a cancellable <code style="font-family:var(--mono);font-size:0.82em;">context.Context</code> hooked to <code style="font-family:var(--mono);font-size:0.82em;">os.Interrupt</code> so Ctrl+C cleanly aborts a long fetch.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Delegates to <code style="font-family:var(--mono);font-size:0.82em;">fetcher.NewFetcher().FetchFindings()</code> then passes results to <strong>runPipeline()</strong> with <code style="font-family:var(--mono);font-size:0.82em;">SaveCSVPath</code> set when <code style="font-family:var(--mono);font-size:0.82em;">--save-csv</code> is given.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Exits 0 with a "no findings" message if the SCC API returns an empty result set — not an error.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">pkg/fetcher.FetchFindings</span>
+        <span class="rel-tag calls">pipeline.runPipeline</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- stats.go -->
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-cmd">Command</span>
+      <span class="file-name">stats.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Implements the <strong>stats</strong> command — a read-only, no-output-file mode that parses
+        a CSV, scores it, detects compliance violations, then prints a structured dashboard to
+        stdout. Nothing is written to disk.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Runs the full parse + score + compliance chain (same as the pipeline) but skips remediation, AI enrichment, filtering, and file writing.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Prints: total rows / parse errors / active findings; priority breakdown with percentages; risk score stats (mean, median, stddev, range); top 10 categories; compliance violations by framework; top 5 GCP projects by finding count.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Useful as a fast situational overview before committing to a full report run on large datasets.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">pkg/parser.ParseFile</span>
+        <span class="rel-tag calls">pkg/scoring.Engine.ScoreAll</span>
+        <span class="rel-tag calls">pkg/compliance.Detector</span>
+        <span class="rel-tag calls">pkg/report.Builder.Build</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- filter.go -->
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-cmd">Command</span>
+      <span class="file-name">filter.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Implements the <strong>filter</strong> command — a CSV-to-CSV slicing tool. Reads an input
+        CSV, scores it so risk-score filters work, applies the requested filters, then writes just the
+        matching rows to a new CSV (or stdout). No HTML/Markdown report is generated.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Supports <code style="font-family:var(--mono);font-size:0.82em;">--priority</code>, <code style="font-family:var(--mono);font-size:0.82em;">--category</code>, <code style="font-family:var(--mono);font-size:0.82em;">--project</code>, <code style="font-family:var(--mono);font-size:0.82em;">--min-risk-score</code>, <code style="font-family:var(--mono);font-size:0.82em;">--max-risk-score</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">When <code style="font-family:var(--mono);font-size:0.82em;">-o</code> is omitted the filtered CSV is written to stdout, making it pipeable to other tools.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text">Calls <strong>applyFilters()</strong> defined in analyze.go — the same filter logic, zero duplication.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">pkg/parser.ParseFile</span>
+        <span class="rel-tag calls">pkg/scoring.Engine.ScoreAll</span>
+        <span class="rel-tag calls">analyze.applyFilters</span>
+        <span class="rel-tag calls">pkg/report.CSVGenerator</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- pipeline.go -->
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-cmd">Shared Logic</span>
+      <span class="file-name">pipeline.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        The heart of the command layer. Defines <strong>runPipeline()</strong> — the single function
+        that both the <em>analyze</em> and <em>fetch</em> commands call after their input-gathering
+        phase. Executes the full seven-stage chain in strict order, guaranteeing the same output
+        quality regardless of whether data came from a CSV file or the live API.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 1 — Score:</strong> calls <code style="font-family:var(--mono);font-size:0.82em;">scoring.Engine.ScoreAll()</code> — assigns a 0–100 risk score to every finding in parallel.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 2 — Compliance:</strong> calls <code style="font-family:var(--mono);font-size:0.82em;">compliance.Detector.DetectViolations()</code> per finding.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 3 — Remediation (optional):</strong> calls <code style="font-family:var(--mono);font-size:0.82em;">remediation.Generator.GenerateAll()</code> when <code style="font-family:var(--mono);font-size:0.82em;">--include-remediation</code> is set (default on).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 4 — AI Enrichment (optional):</strong> calls <code style="font-family:var(--mono);font-size:0.82em;">llm.Enricher.EnrichAll()</code> when <code style="font-family:var(--mono);font-size:0.82em;">--ai-enhance</code> is set and ANTHROPIC_API_KEY is present.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 5 — Save raw CSV (optional):</strong> writes the scored-but-unfiltered findings as CSV when <code style="font-family:var(--mono);font-size:0.82em;">--save-csv</code> is given.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 6 — Filter:</strong> calls <code style="font-family:var(--mono);font-size:0.82em;">applyFilters()</code> to reduce findings to the requested subset.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#1d4ed8;"></div><div class="resp-text"><strong>Stage 7 — Report:</strong> builds the Report object, resolves output paths, calls <code style="font-family:var(--mono);font-size:0.82em;">report.WriteReports()</code> or <code style="font-family:var(--mono);font-size:0.82em;">WriteSplitByPriority()</code>, then writes per-finding remediation scripts.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">analyze.go · fetch.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">pkg/scoring</span>
+        <span class="rel-tag calls">pkg/compliance</span>
+        <span class="rel-tag calls">pkg/remediation</span>
+        <span class="rel-tag calls">pkg/llm</span>
+        <span class="rel-tag calls">pkg/report</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/FETCHER                                        -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-fetch" id="fetcher">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-fetch" style="background:#dcfce7;">☁️</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-fetch" style="color:#166534;">Package — fetcher</p>
+      <p class="pkg-path">pkg/fetcher/</p>
+      <p class="pkg-desc">Connects to the GCP Security Command Center gRPC API and converts raw protobuf responses into the internal Finding model.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">fetcher.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        The GCP API client. Authenticates using Application Default Credentials, builds a time-filtered
+        query for ACTIVE findings, and paginates through all results (up to 1 000 per page) automatically.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Creates a <strong>securitycenter.Client</strong> — authentication happens here via Google's ADC chain (env var, service account key, or user credentials).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Builds the filter string: <code style="font-family:var(--mono);font-size:0.82em;">state="ACTIVE" AND event_time >= "{cutoff}"</code> using the requested number of lookback days.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Target is <code style="font-family:var(--mono);font-size:0.82em;">organizations/{orgID}/sources/-</code> — the wildcard <code style="font-family:var(--mono);font-size:0.82em;">-</code> means all security sources across the entire organization.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Loops over the iterator until <code style="font-family:var(--mono);font-size:0.82em;">iterator.Done</code>, calling <strong>convert.ConvertFinding()</strong> on each result. Logs progress every 500 findings.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Returns a partial result + error on mid-fetch failure rather than discarding all data already retrieved.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">cmd/analyzer/fetch.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">fetcher/convert.ConvertFinding</span>
+        <span class="rel-tag calls">GCP securitycenter API (gRPC)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">convert.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Translates a raw GCP protobuf <code style="font-family:var(--mono);font-size:0.85em;">ListFindingsResponse_ListFindingsResult</code>
+        into the internal <code style="font-family:var(--mono);font-size:0.85em;">*models.Finding</code>.
+        This is the boundary between the GCP API world and the rest of the program.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Extracts core fields: name, category, state, severity, resource name/type/project, timestamps, description, next steps, external URI.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Extracts vulnerability data: CVE ID, CVSS base score, zero-day flag, exploit-in-the-wild flag, exploitation activity level.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text">Extracts compliance mappings from the <code style="font-family:var(--mono);font-size:0.82em;">pb.GetCompliances()</code> list and serialises them as JSON for the compliance detector.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text"><strong>sanitizeEnum()</strong> strips GCP protobuf prefix noise (e.g. <code style="font-family:var(--mono);font-size:0.82em;">FINDING_CLASS_VULNERABILITY → VULNERABILITY</code>).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text"><strong>sanitizeExploitActivity()</strong> maps GCP's enum values (<code style="font-family:var(--mono);font-size:0.82em;">WIDE</code>, <code style="font-family:var(--mono);font-size:0.82em;">AVAILABLE</code>, etc.) to the scoring engine's vocabulary (<code style="font-family:var(--mono);font-size:0.82em;">ACTIVE</code>, <code style="font-family:var(--mono);font-size:0.82em;">POC</code>, etc.).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#166534;"></div><div class="resp-text"><strong>extractProjectID()</strong> parses <code style="font-family:var(--mono);font-size:0.82em;">"projects/my-project"</code> paths to return just the project ID string.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">fetcher.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Produces →</span>
+        <span class="rel-tag calls">internal/models.Finding</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/PARSER                                         -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-parser" id="parser">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-parser" style="background:#ccfbf1;">📑</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-parser" style="color:#0f766e;">Package — parser</p>
+      <p class="pkg-path">pkg/parser/</p>
+      <p class="pkg-desc">Reads GCP Security Command Center CSV exports and converts each row into an internal Finding struct, handling the inconsistent column naming and embedded JSON that GCP produces.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">csv.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        The CSV parser. Handles GCP's varying column naming conventions (both bare names like
+        <code style="font-family:var(--mono);font-size:0.85em;">severity</code> and full API paths
+        like <code style="font-family:var(--mono);font-size:0.85em;">finding.severity</code>),
+        embedded JSON sub-objects (CVSS data, compliance arrays), and malformed rows — without crashing.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>columnAliases</strong> — a static map of ~30 GCP SCC column name variants to canonical internal names, enabling the parser to handle multiple GCP export formats transparently.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>buildIndex()</strong> — two-pass header scan: first indexes every column exactly, then overlays the alias map. "First column wins" prevents duplicates.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>ParseFile() / Parse()</strong> — opens the file and streams rows. Bad rows increment a <code style="font-family:var(--mono);font-size:0.82em;">parseErrors</code> counter and are skipped rather than aborting the entire parse.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>parseRow()</strong> — maps a single CSV row to a Finding. Applies defaults (severity → LOW, state → ACTIVE) for missing fields.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>parseCVSSScore()</strong> — extracts the numeric base score from a JSON object, a JSON string, or a plain float — whichever format GCP happened to emit.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>parseComplianceFrameworks()</strong> — handles compliance data as a JSON array of objects, a JSON array of strings, or a plain comma-separated string.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text">Uses <code style="font-family:var(--mono);font-size:0.82em;">csv.Reader</code> with <code style="font-family:var(--mono);font-size:0.82em;">LazyQuotes=true</code> and variable field count to tolerate GCP's occasionally malformed output.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">analyze.go · stats.go · filter.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Produces →</span>
+        <span class="rel-tag calls">internal/models.Finding</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/SCORING                                        -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-score" id="scoring">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-score" style="background:#fee2e2;">🎯</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-score" style="color:#dc2626;">Package — scoring</p>
+      <p class="pkg-path">pkg/scoring/</p>
+      <p class="pkg-desc">Two files: one computes each finding's composite 0–100 risk score using six weighted components; the other provides filtering, sorting, grouping, and statistics utilities.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">risk.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        The risk scoring engine. Calculates a composite 0–100 score per finding from six independent
+        components, applies a category weight multiplier, enforces a GCP-severity floor, and writes
+        a human-readable rationale. Uses up to 8 goroutines to score all findings in parallel.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>ScoringConfig</strong> — holds all weight constants. <code style="font-family:var(--mono);font-size:0.82em;">DefaultConfig()</code> returns production values; can be overridden from a YAML file.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>baseSeverityScore()</strong> — maps GCP severity label to a base score: Critical=40, High=30, Medium=20, Low=10.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>cvssScore()</strong> — scales the CVSS base score (0–10) by 3× to a 0–30 component, capped at 30.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>exploitabilityScore()</strong> — adds up to 20 points for: exploited in the wild (+10), zero-day (+8), active exploit code (+6), known CVE (+2).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>classModifierScore()</strong> — adds up to 10 points based on finding class: THREAT=10, VULNERABILITY=7, MISCONFIGURATION=5, OBSERVATION=2.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>exposureScore()</strong> — adds up to 10 points for public IP (+5), load-balancer category (+3), data store category (+2).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>complianceScore()</strong> — adds up to 10 points when compliance frameworks are mapped or audit/logging categories are present.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>categoryWeight()</strong> — multiplies the sum by 1.2× for high-risk categories (vulnerabilities, privilege escalation), 1.0× for medium, 0.8× for low-risk.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>Severity floor:</strong> CRITICAL findings score minimum 75, HIGH minimum 55 — GCP's expert assessment is never downgraded by missing metadata.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>ScoreAll()</strong> distributes findings across up to 8 goroutines via a buffered job channel, blocking until all workers finish.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">pipeline.go · stats.go · filter.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Writes to →</span>
+        <span class="rel-tag calls">models.Finding.RiskScore · models.Finding.Priority</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">priorities.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Utility functions that operate on scored findings: filtering by priority/category/project/score,
+        sorting by descending risk score, grouping into priority buckets, and computing statistical
+        summaries (mean, median, stddev, range) over a score distribution.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>FilterByPriority / Category / Project / RiskScore()</strong> — each returns a filtered sub-slice, all using set-based membership for O(n) performance.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>SortByRiskScore()</strong> — descending sort; nil RiskScore fields are treated as 0.0.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>GroupByPriority()</strong> — returns a map with pre-populated keys for all four priority levels, so callers can safely index any key even if empty.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#dc2626;"></div><div class="resp-text"><strong>ComputeStats()</strong> — collects scores from all findings, sorts them, and returns a <code style="font-family:var(--mono);font-size:0.82em;">RiskScoreStats</code> with count, mean, median, min, max, and stddev.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">pkg/report/builder.go</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/COMPLIANCE                                     -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-comp" id="compliance">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-comp" style="background:#fef3c7;">📋</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-comp" style="color:#b45309;">Package — compliance</p>
+      <p class="pkg-path">pkg/compliance/</p>
+      <p class="pkg-desc">Maps findings to the compliance frameworks they violate. Two files: one defines the canonical list of supported frameworks; the other detects and aggregates violations from finding data.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">frameworks.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Defines the seven supported compliance frameworks and their alias normalization. Acts as the
+        single source of truth for framework naming — all other code calls into this file to resolve
+        a raw name to a canonical ID.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>KnownFrameworks</strong> — the master list: CIS Benchmarks, PCI-DSS, HIPAA, SOC 2, ISO 27001, NIST, GDPR. Each entry has an ID, display name, description, and list of known aliases.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>aliasMap</strong> — built at init time, maps every lowercase-normalized alias string to its canonical ID (<code style="font-family:var(--mono);font-size:0.82em;">"cisgcp" → "CIS"</code>, <code style="font-family:var(--mono);font-size:0.82em;">"pci_dss" → "PCI-DSS"</code>, etc.).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>normalize()</strong> — strips hyphens, underscores, spaces, and lowercases — so "CIS_GCP", "CISGCP", and "cis-gcp" all resolve to the same key.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>CanonicalID()</strong> — public function used by the detector to resolve any observed string to a canonical ID, returning the input unchanged if no match.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">compliance/detector.go</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">detector.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Parses compliance data embedded in each finding (from two different JSON fields GCP uses),
+        deduplicates violations, and aggregates them into a framework → violations map for reporting.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>DetectViolations(f)</strong> — runs both parsers, deduplicates with <strong>dedupViolations()</strong>, and attaches the result to <code style="font-family:var(--mono);font-size:0.82em;">f.Violations</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>parseCompliances()</strong> — parses the <code style="font-family:var(--mono);font-size:0.82em;">finding.compliances</code> JSON array. Handles both array and single-object forms, and alternate field names (<code style="font-family:var(--mono);font-size:0.82em;">standard</code> / <code style="font-family:var(--mono);font-size:0.82em;">framework</code> / <code style="font-family:var(--mono);font-size:0.82em;">name</code>).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>parseComplianceDetails()</strong> — parses the <code style="font-family:var(--mono);font-size:0.82em;">finding.compliance_details.frameworks</code> JSON field (array or object form).</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>Aggregate(findings)</strong> — collapses all per-finding violations into a <code style="font-family:var(--mono);font-size:0.82em;">map[string][]*ComplianceViolation</code> keyed by framework, sorted by violation count descending. Used to build the compliance summary section in reports.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#b45309;"></div><div class="resp-text"><strong>dedupViolations()</strong> — removes duplicate framework+control combinations using a seen-set, preserving order.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">pipeline.go · stats.go · filter.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">frameworks.CanonicalID</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/REMEDIATION                                    -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-rem" id="remediation">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-rem" style="background:#d1fae5;">🛠</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-rem" style="color:#0f766e;">Package — remediation</p>
+      <p class="pkg-path">pkg/remediation/</p>
+      <p class="pkg-desc">Generates actionable fix guidance for every finding and complete, runnable bash/python scripts for CRITICAL findings with real resource names baked in.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">guidance.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Generates structured human-readable remediation guidance for every finding: a one-line summary,
+        step-by-step instructions, effort estimate, automation potential rating, documentation links,
+        and priority rationale. For CRITICAL findings it also triggers script generation.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>Generate(f)</strong> — assembles a complete <code style="font-family:var(--mono);font-size:0.82em;">RemediationStep</code> and attaches it to <code style="font-family:var(--mono);font-size:0.82em;">f.Remediation</code>. For CRITICAL findings calls <code style="font-family:var(--mono);font-size:0.82em;">ScriptGenerator.Generate(f)</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>parseNextSteps()</strong> — converts the raw <code style="font-family:var(--mono);font-size:0.82em;">next_steps</code> string from GCP (which can be a numbered list, bullet list, or semicolon-separated) into a clean string slice.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>resourceLinks()</strong> — returns category-specific GCP documentation URLs (e.g. VPC flow logs docs for FLOW_LOGS, firewall docs for FIREWALL). Always appends the generic SCC overview link. Appends NVD link when a CVE ID is present.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>estimatedEffort()</strong> — returns a plain-English effort estimate (Low / Medium / High) keyed to the finding category and class.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>automationPotential()</strong> — returns an automation level and a sample <code style="font-family:var(--mono);font-size:0.82em;">gcloud</code> command demonstrating how to automate the fix.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>summary()</strong> — one-line description of what needs to change, category-aware (e.g. "Enable VPC Flow Logs on the affected subnet").</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>priorityRationale()</strong> — explains why the finding got its priority: lists the contributing factors (severity, CVSS, exploit status, public IP, compliance).</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">pipeline.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">remediation/scripts.ScriptGenerator</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">scripts.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Generates complete, immediately runnable remediation scripts for CRITICAL findings.
+        Scripts include the real resource names, project IDs, regions, and zones extracted from
+        the GCP resource path — so they can be executed directly rather than requiring manual
+        substitution. Supports both bash and Python 3.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>Generate(f)</strong> — dispatches to the correct script generator based on finding category. Unrecognised categories get a generic inspection script rather than failing.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>parseResourceName()</strong> — parses GCP API resource paths like <code style="font-family:var(--mono);font-size:0.82em;">//compute.googleapis.com/projects/proj/regions/us-central1/subnetworks/my-subnet</code> into a named key-value map.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text"><strong>scriptHeader()</strong> — emits a standardised comment block at the top of every script with finding name, category, priority, risk score, resource, project, CVE (if any), and generation date.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text">All bash scripts include <code style="font-family:var(--mono);font-size:0.82em;">set -euo pipefail</code> and a <code style="font-family:var(--mono);font-size:0.82em;">DRY_RUN</code> environment variable guard — set it to <code style="font-family:var(--mono);font-size:0.82em;">true</code> to preview without making changes.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text">Bash scripts cover: VPC flow logs, Private Google Access, GCS bucket access logging, audit logging (with inline Python policy merging), firewall rule logging, open firewall restrictions, weak SSL policy creation, service account key rotation, IAM anomaly investigation.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0f766e;"></div><div class="resp-text">Python 3 scripts cover: container image vulnerability remediation (queries Container Analysis API, gets cluster credentials, prints rebuild instructions) and OS vulnerability patching (queries OS Config API, launches a Cloud OS Config patch job).</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">remediation/guidance.go</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/LLM                                            -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-llm" id="llm">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-llm" style="background:#ede9fe;">🤖</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-llm" style="color:#7c3aed;">Package — llm</p>
+      <p class="pkg-path">pkg/llm/</p>
+      <p class="pkg-desc">Optional AI enrichment layer. Calls the Claude API to improve the risk rationale and remediation script for CRITICAL findings. Completely skipped if --ai-enhance is absent or ANTHROPIC_API_KEY is unset.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">enricher.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        An HTTP client for the Claude Messages API. Sends a structured prompt for each CRITICAL
+        finding, parses the JSON response, and overwrites the finding's Rationale and
+        RemediationScript with the AI-improved versions. Runs up to 4 enrichments concurrently.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#7c3aed;"></div><div class="resp-text">Uses <strong>claude-haiku-4-5</strong> model with 1 024 max tokens and a 30-second HTTP timeout — balanced for cost and speed at scale.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#7c3aed;"></div><div class="resp-text"><strong>EnrichAll()</strong> — filters to CRITICAL findings, distributes them across up to 4 goroutines via a job channel. Per-finding errors are logged and skipped; the original template values are preserved.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#7c3aed;"></div><div class="resp-text"><strong>buildPrompt()</strong> — constructs a structured prompt with all available finding context: category, severity, resource name, project, description, CVE, CVSS. Instructs Claude to return only a JSON object with three fields.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#7c3aed;"></div><div class="resp-text"><strong>parseResult()</strong> — strips accidental markdown fences from the response then unmarshals the JSON into <code style="font-family:var(--mono);font-size:0.82em;">enrichResult{RiskRationale, RemediationScript, RemediationLang}</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#7c3aed;"></div><div class="resp-text">Only overwrites finding fields if the LLM returned non-empty strings — partial failures degrade gracefully to template output.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#7c3aed;"></div><div class="resp-text">Appends <code style="font-family:var(--mono);font-size:0.82em;">[AI-enhanced]</code> to the rationale string so downstream consumers can distinguish AI output from template output.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">pipeline.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">api.anthropic.com/v1/messages (HTTP)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PKG/REPORT                                         -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-report" id="report">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-report" style="background:#dbeafe;">📄</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-report" style="color:#2563eb;">Package — report</p>
+      <p class="pkg-path">pkg/report/</p>
+      <p class="pkg-desc">Five files that turn scored findings into output. One orchestrates everything (builder.go); four render findings into specific formats (HTML, Markdown, JSON, CSV).</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">builder.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        The report orchestrator. Assembles the <code style="font-family:var(--mono);font-size:0.85em;">*models.Report</code>
+        object from findings, computes all aggregate statistics, and exposes functions for writing
+        reports in one or more formats, optionally split by priority level, and for writing
+        per-finding remediation scripts.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>Build()</strong> — creates the Report object: sets metadata (timestamp, input file, total rows, parse errors), computes stats, category breakdown, and project breakdown.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>computeStats()</strong> — counts findings by priority, computes risk score statistics (mean, median, stddev via utils), builds top-categories and top-projects ranked lists.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>buildCategoryBreakdown() / buildProjectBreakdown()</strong> — aggregates per-category and per-project counts with priority sub-breakdown and average risk score.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>WriteReport()</strong> — dispatches to the correct renderer (Markdown / JSON / HTML / CSV) and writes to a file path.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>WriteReports()</strong> — writes the same report in multiple formats into an output directory, creating it if needed.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>WriteSplitByPriority()</strong> — writes separate files per priority level (critical, high, medium, low), skipping levels with zero findings.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text"><strong>WriteRemediationScripts()</strong> — creates <code style="font-family:var(--mono);font-size:0.82em;">remediation-scripts/</code> subdirectory, writes one <code style="font-family:var(--mono);font-size:0.82em;">.sh</code> or <code style="font-family:var(--mono);font-size:0.82em;">.py</code> file per CRITICAL finding that has a script, sets <code style="font-family:var(--mono);font-size:0.82em;">chmod 755</code> on each.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">pipeline.go · stats.go · filter.go</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Calls →</span>
+        <span class="rel-tag calls">html.go · markdown.go · json.go · csv.go</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">html.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Renders the Report as a self-contained HTML file with styling embedded inline. Produces
+        the richest output format — includes executive summary charts, per-finding cards with
+        all metadata, compliance tables, and collapsible remediation sections.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Implements the <strong>HTMLGenerator</strong> struct. Called by <code style="font-family:var(--mono);font-size:0.82em;">builder.WriteReport()</code> when format is "html".</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Outputs a complete single-file HTML page — no external CSS or JS dependencies.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Priority badges, risk score bars, compliance framework tables, and remediation steps are all rendered from the structured <code style="font-family:var(--mono);font-size:0.82em;">models.Report</code> data.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">builder.WriteReport</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">markdown.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Renders the Report as a GitHub-flavoured Markdown document. Optimised for reading in
+        terminals, git forges, and documentation sites. Tables, headers, code blocks, and
+        bullet lists make findings easy to scan without a browser.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Implements <strong>MarkdownGenerator</strong>. Default output format when no explicit format is requested.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Renders an executive summary table, then findings grouped and sorted by risk score, with remediation steps as numbered lists and scripts in fenced code blocks.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">builder.WriteReport</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">json.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Renders the Report as pretty-printed JSON. Intended for integration with SIEMs, dashboards,
+        custom scripts, and any downstream tooling that needs machine-readable structured output.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Implements <strong>JSONGenerator</strong>. The entire <code style="font-family:var(--mono);font-size:0.82em;">models.Report</code> struct serialises directly since all fields carry <code style="font-family:var(--mono);font-size:0.82em;">json:</code> tags.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Supports a pretty-print flag (enabled by default via <code style="font-family:var(--mono);font-size:0.82em;">NewJSONGenerator(true)</code>).</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">builder.WriteReport</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-pkg">Package</span>
+      <span class="file-name">csv.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Renders findings as a CSV file compatible with spreadsheets and data analysis tools. Each
+        finding becomes one row; scored and compliance-annotated fields are included alongside the
+        original GCP fields.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Implements <strong>CSVGenerator</strong>. Used by both the report pipeline and the <em>filter</em> command's direct CSV output.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#2563eb;"></div><div class="resp-text">Adds computed columns (risk score total, priority, rationale) not present in the original GCP export, making the output self-contained for re-analysis.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">builder.WriteReport · filter.go</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- INTERNAL/MODELS                                    -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-models" id="models">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-models" style="background:#f1f5f9;">🧩</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-models" style="color:#475569;">Internal — models</p>
+      <p class="pkg-path">internal/models/</p>
+      <p class="pkg-desc">The shared data layer. Three files that define every struct, constant, and type used across all packages. No business logic lives here — only data shapes.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-model">Model</span>
+      <span class="file-name">finding.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Defines the <strong>Finding</strong> struct — the central data object that flows through
+        every stage of the pipeline. Contains all raw fields from GCP (CSV tags), all parsed/computed
+        fields added during analysis (csv:"-"), and pointer fields for attached enrichments.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text">Core identification: name, finding class, finding type, category, state, severity.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text">Resource fields: resource name, display name, type, project ID, project display name.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text">Timestamps: EventTime (parsed) and EventTimeRaw (string) — dual fields for both rendering and API use.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text">Vulnerability data: CVE ID, CVSS score, exploit-in-the-wild flag, zero-day flag, exploitation activity, public IP exposure — parsed from raw JSON strings.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text">Computed fields (added during pipeline): <code style="font-family:var(--mono);font-size:0.82em;">*RiskScore</code>, <code style="font-family:var(--mono);font-size:0.82em;">Priority</code>, <code style="font-family:var(--mono);font-size:0.82em;">*RemediationStep</code>, <code style="font-family:var(--mono);font-size:0.82em;">[]ComplianceViolation</code>.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text">Helper methods: <code style="font-family:var(--mono);font-size:0.82em;">IsActive()</code>, <code style="font-family:var(--mono);font-size:0.82em;">HasCVE()</code>, <code style="font-family:var(--mono);font-size:0.82em;">SeverityScore()</code> (numeric for sorting), <code style="font-family:var(--mono);font-size:0.82em;">ShortName()</code> (last path segment of the finding name).</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-model">Model</span>
+      <span class="file-name">report.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Defines the <strong>Report</strong> struct and all supporting aggregate types. This is the
+        data contract between the report builder and the format renderers.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>Report</strong> — top-level container: metadata (timestamp, input file, row counts), slice of Findings, aggregate Stats, ComplianceSummary, CategoryBreakdown, ProjectBreakdown.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>ReportStats</strong> — total/critical/high/medium/low counts, risk score statistics, top-categories list, top-projects list.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>CategoryStats / ProjectStats</strong> — per-category and per-project breakdowns with priority sub-counts and average risk scores.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>FilterOptions / ReportOptions</strong> — option structs used as a clean API boundary between commands and the pipeline.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-model">Model</span>
+      <span class="file-name">risk_score.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Defines all scoring-related and remediation-related types, the four priority constants, the
+        numeric thresholds that map scores to priority levels, the SLA strings, and the
+        <code style="font-family:var(--mono);font-size:0.85em;">PriorityFromScore()</code> function.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>RiskScore</strong> — holds all six component values, the category weight, the total, and the human-readable rationale string.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>RiskScoreStats</strong> — statistical summary: count, mean, median, min, max, stddev.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>ComplianceViolation</strong> — a single framework+control violation: framework name, version, control ID, description, finding names, and occurrence count.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>RemediationStep</strong> — the full remediation record: summary, next steps list, documentation links, effort estimate, automation level + hint, priority rationale, script content, and script language.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>Priority constants + thresholds:</strong> Critical ≥ 75, High ≥ 55, Medium ≥ 35, Low &lt; 35. SLAs: Critical = 24–48 h, High = 1 week, Medium = 30 days, Low = 90 days.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#475569;"></div><div class="resp-text"><strong>PriorityFromScore()</strong> — converts a numeric score to the corresponding priority string constant.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- INTERNAL/UTILS                                     -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="pkg-group theme-utils" id="utils">
+  <div class="pkg-header">
+    <div class="pkg-icon theme-utils" style="background:#cffafe;">⚙️</div>
+    <div class="pkg-meta">
+      <p class="pkg-label theme-utils" style="color:#0e7490;">Internal — utils</p>
+      <p class="pkg-path">internal/utils/</p>
+      <p class="pkg-desc">Three files providing shared foundations: a structured logger, math and string helper functions, and a CLI argument parsing utility.</p>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-util">Utility</span>
+      <span class="file-name">logger.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        A minimal structured logger with four levels (DEBUG, INFO, WARN, ERROR). Writes to
+        <code style="font-family:var(--mono);font-size:0.85em;">stderr</code> with ISO-8601 timestamps
+        so it does not pollute <code style="font-family:var(--mono);font-size:0.85em;">stdout</code>
+        (which is reserved for report content and the terminal summary).
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>Logger struct</strong> — holds a minimum level and an <code style="font-family:var(--mono);font-size:0.82em;">io.Writer</code>. Log calls below the minimum level are silently dropped.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text">Format: <code style="font-family:var(--mono);font-size:0.82em;">2006-01-02T15:04:05Z [INFO ] message</code> — fixed-width level strings align log output for readability.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>DefaultLogger</strong> — package-level singleton at INFO level, used by packages that haven't received an injected logger.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>SetLevel()</strong> — runtime level adjustment; called by commands honouring <code style="font-family:var(--mono);font-size:0.82em;">--verbose</code> and <code style="font-family:var(--mono);font-size:0.82em;">--debug</code> flags.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-util">Utility</span>
+      <span class="file-name">helpers.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        A collection of pure, stateless helper functions used across multiple packages: floating-point
+        math, string manipulation, and safe numeric conversions. Contains no state.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>Math:</strong> <code style="font-family:var(--mono);font-size:0.82em;">Min / Max / Round / Mean / Median / StdDev</code> — used by the scoring engine and report builder for risk score statistics.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>ContainsAny(s, substrings...)</strong> — case-insensitive multi-substring check used extensively by the scoring and remediation packages for category matching.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>Truncate(s, maxLen)</strong> — safe string truncation with "..." suffix for display.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>NormalizeString()</strong> — normalises line endings and trims whitespace.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>ParseBool()</strong> — maps "true"/"yes"/"1"/"t"/"y" → true, everything else → false. Used by the CSV parser for boolean GCP fields.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>SafePercentage(part, total)</strong> — division with zero-guard; used in the stats command's percentage column.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>UniqueStrings()</strong> — order-preserving deduplication of string slices; used by the CSV parser for compliance framework lists.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>StringSliceContains()</strong> — case-insensitive membership test.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-card">
+    <div class="file-head">
+      <span class="chip chip-util">Utility</span>
+      <span class="file-name">flags.go</span>
+    </div>
+    <div class="file-body">
+      <p class="file-summary">
+        Solves a specific problem with Go's standard <code style="font-family:var(--mono);font-size:0.85em;">flag</code> package:
+        it requires positional arguments to come last. GCP-Sec allows users to place the CSV
+        filename anywhere in the argument list — this file provides the parsing logic that makes
+        that work.
+      </p>
+      <div class="resp-list">
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text"><strong>ExtractPositional(args, knownValueFlags)</strong> — single-pass scan of the argument list. Recognises named flags (starting with <code style="font-family:var(--mono);font-size:0.82em;">-</code>) and the values that follow them, so it never mistakes a flag's value for the positional CSV path.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text">Returns <code style="font-family:var(--mono);font-size:0.82em;">(positional string, flagArgs []string)</code> — the CSV path and a cleaned args slice that Go's FlagSet can safely parse.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text">Handles both <code style="font-family:var(--mono);font-size:0.82em;">--flag value</code> and <code style="font-family:var(--mono);font-size:0.82em;">--flag=value</code> syntax via the <code style="font-family:var(--mono);font-size:0.82em;">knownValueFlags</code> map and a <code style="font-family:var(--mono);font-size:0.82em;">skipNext</code> boolean.</div></div>
+        <div class="resp-item"><div class="resp-dot" style="background:#0e7490;"></div><div class="resp-text">Called by <strong>analyze.go</strong>, <strong>stats.go</strong>, and <strong>filter.go</strong> before their FlagSet parse calls.</div></div>
+      </div>
+      <div class="rel-row">
+        <span class="rel-label">Called by →</span>
+        <span class="rel-tag used-by">analyze.go · stats.go · filter.go</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- DEPENDENCY MAP                                     -->
+<!-- ══════════════════════════════════════════════════ -->
+<div style="margin-bottom:52px;" id="depmap">
+  <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">Package Dependency Map</p>
+  <h2 style="font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:16px;letter-spacing:-0.02em;">How packages call each other</h2>
+  <p style="color:var(--t2);font-size:0.9rem;margin-bottom:24px;">
+    Arrows show caller → callee direction. The <code style="font-family:var(--mono);font-size:0.85em;">internal/</code> packages are
+    depended upon by everyone; no package inside <code style="font-family:var(--mono);font-size:0.85em;">pkg/</code> or <code style="font-family:var(--mono);font-size:0.85em;">cmd/</code>
+    imports from a sibling at the same level — dependency always flows downward.
+  </p>
+  <div class="dep-map">
+    <p class="dep-section-label">Binary entry</p>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#b45309;">main.go</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#1d4ed8;">cmd/analyzer</div>
+    </div>
+
+    <p class="dep-section-label">CLI commands → shared pipeline</p>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#1d4ed8;">analyze.go · fetch.go</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#374151;">pipeline.go</div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#1d4ed8;">stats.go · filter.go</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#374151;">(scoring · compliance · report directly)</div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#1d4ed8;">fetch.go</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#166534;">pkg/fetcher</div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#1d4ed8;">analyze · stats · filter</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#0f766e;">pkg/parser</div>
+    </div>
+
+    <p class="dep-section-label">Pipeline stages → domain packages</p>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#374151;">pipeline.go</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#dc2626;">pkg/scoring</div>
+      <div class="dep-box" style="background:#b45309;">pkg/compliance</div>
+      <div class="dep-box" style="background:#0f766e;">pkg/remediation</div>
+      <div class="dep-box" style="background:#7c3aed;">pkg/llm</div>
+      <div class="dep-box" style="background:#2563eb;">pkg/report</div>
+    </div>
+
+    <p class="dep-section-label">Domain packages → internal foundations</p>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#374151;">all pkg/ packages</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#475569;">internal/models</div>
+      <div class="dep-box" style="background:#0e7490;">internal/utils</div>
+    </div>
+
+    <p class="dep-section-label">Fetcher → GCP; LLM → Anthropic API</p>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#166534;">pkg/fetcher</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#1f2937;">GCP securitycenter API (gRPC)</div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-box" style="background:#7c3aed;">pkg/llm</div>
+      <span class="dep-arrow">→</span>
+      <div class="dep-box" style="background:#1f2937;">api.anthropic.com (HTTPS)</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  GCP-Sec · wanaware · 35 Go files across 11 packages · Generated 2026-03-09
+</div>
+
+</div>
+</body>
+</html>
