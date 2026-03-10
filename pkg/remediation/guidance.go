@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // Generator produces remediation steps for findings.

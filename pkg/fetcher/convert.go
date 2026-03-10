@@ -8,7 +8,7 @@ import (
 
 	"cloud.google.com/go/securitycenter/apiv1/securitycenterpb"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // ConvertFinding converts a GCP SCC protobuf ListFindingsResult

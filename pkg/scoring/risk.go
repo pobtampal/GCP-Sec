@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/utils"
 )
 
 // ScoringConfig holds weights for each scoring component.

@@ -1,4 +1,4 @@
-BINARY    := gcp-security-analyzer
+BINARY    := GCP-Sec
 MAIN      := ./main.go
 BUILD_DIR := ./dist
 VERSION   := 1.0.0

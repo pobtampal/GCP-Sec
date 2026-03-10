@@ -1,4 +1,4 @@
-// gcp-security-analyzer analyzes GCP Security Command Center findings
+// GCP-Sec analyzes GCP Security Command Center findings
 // from CSV exports and generates comprehensive security reports with
 // risk scoring, compliance violations, and remediation guidance.
 package main
@@ -6,7 +6,7 @@ package main
 import (
 	"os"
 
-	"github.com/wanaware/gcp-security-analyzer/cmd/analyzer"
+	"github.com/wanaware/GCP-Sec/cmd/analyzer"
 )
 
 func main() {

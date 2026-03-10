@@ -42,11 +42,11 @@ jobs:
           echo "Total coverage: ${COVERAGE}%"
 
       - name: Build binary
-        run: go build -o gcp-security-analyzer .
+        run: go build -o GCP-Sec .
 
       - name: Run sample analysis (smoke test)
         run: |
-          ./gcp-security-analyzer analyze testdata/sample-findings.csv \
+          ./GCP-Sec analyze testdata/sample-findings.csv \
             --output /tmp/test-report.md \
             --include-remediation \
             --include-compliance
@@ -80,11 +80,11 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           LDFLAGS="-ldflags=-X main.version=${VERSION} -s -w"
 
-          GOOS=linux   GOARCH=amd64 go build ${LDFLAGS} -o dist/gcp-security-analyzer-linux-amd64 .
-          GOOS=linux   GOARCH=arm64 go build ${LDFLAGS} -o dist/gcp-security-analyzer-linux-arm64 .
-          GOOS=darwin  GOARCH=amd64 go build ${LDFLAGS} -o dist/gcp-security-analyzer-darwin-amd64 .
-          GOOS=darwin  GOARCH=arm64 go build ${LDFLAGS} -o dist/gcp-security-analyzer-darwin-arm64 .
-          GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -o dist/gcp-security-analyzer-windows-amd64.exe .
+          GOOS=linux   GOARCH=amd64 go build ${LDFLAGS} -o dist/GCP-Sec-linux-amd64 .
+          GOOS=linux   GOARCH=arm64 go build ${LDFLAGS} -o dist/GCP-Sec-linux-arm64 .
+          GOOS=darwin  GOARCH=amd64 go build ${LDFLAGS} -o dist/GCP-Sec-darwin-amd64 .
+          GOOS=darwin  GOARCH=arm64 go build ${LDFLAGS} -o dist/GCP-Sec-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -o dist/GCP-Sec-windows-amd64.exe .
 
       - name: Upload release binaries
         uses: actions/upload-artifact@v4

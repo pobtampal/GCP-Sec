@@ -1,4 +1,4 @@
-# Design Specification — gcp-security-analyzer
+# Design Specification — GCP-Sec
 
 **Version:** 2.0
 **Last Updated:** 2026-03-08
@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-gcp-security-analyzer is a CLI tool that ingests GCP Security Command Center (SCC) findings — either from CSV exports or the live SCC API — and produces prioritized, actionable security reports. It applies a transparent, multi-factor risk scoring algorithm, detects compliance violations across seven frameworks, generates remediation guidance with automation scripts, and outputs reports in four formats.
+GCP-Sec is a CLI tool that ingests GCP Security Command Center (SCC) findings — either from CSV exports or the live SCC API — and produces prioritized, actionable security reports. It applies a transparent, multi-factor risk scoring algorithm, detects compliance violations across seven frameworks, generates remediation guidance with automation scripts, and outputs reports in four formats.
 
 ---
 

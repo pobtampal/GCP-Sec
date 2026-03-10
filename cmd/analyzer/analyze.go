@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
-	"github.com/wanaware/gcp-security-analyzer/pkg/parser"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/utils"
+	"github.com/wanaware/GCP-Sec/pkg/parser"
 )
 
 // analyzeValueFlags lists flags for the analyze command that take a value argument.
@@ -82,7 +82,7 @@ func runAnalyze(args []string) int {
 	}
 
 	if inputFile == "" {
-		fmt.Fprintf(os.Stderr, "Error: input CSV file is required\n\nUsage: gcp-security-analyzer analyze <input.csv> [options]\n")
+		fmt.Fprintf(os.Stderr, "Error: input CSV file is required\n\nUsage: GCP-Sec analyze <input.csv> [options]\n")
 		return 1
 	}
 

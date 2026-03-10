@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/utils"
 )
 
 // fieldIndex maps CSV column names to their index in the header row.

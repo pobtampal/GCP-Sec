@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // Detector extracts and aggregates compliance violations from findings.

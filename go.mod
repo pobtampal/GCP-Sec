@@ -1,4 +1,4 @@
-module github.com/wanaware/gcp-security-analyzer
+module github.com/wanaware/GCP-Sec
 
 go 1.24.0
 

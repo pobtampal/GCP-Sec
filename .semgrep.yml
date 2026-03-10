@@ -1,4 +1,4 @@
-# Semgrep configuration for gcp-security-analyzer
+# Semgrep configuration for GCP-Sec
 # Docs: https://semgrep.dev/docs/running-rules/
 
 rules:

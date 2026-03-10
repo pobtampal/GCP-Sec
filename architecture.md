@@ -172,13 +172,13 @@ GCP-Sec/
 All commands are accessed through the single binary:
 
 ```
-gcp-security-analyzer <command> [options]
+GCP-Sec <command> [options]
 ```
 
 ### `analyze` — Primary command (CSV input)
 
 ```bash
-gcp-security-analyzer analyze <input.csv> [options]
+GCP-Sec analyze <input.csv> [options]
 
 Options:
   -o, --output <path>       Output file path; stem used for multi-format naming
@@ -201,17 +201,17 @@ Options:
 **Default behavior** (no format flags): generates both `.md` and `.html` using the input filename stem.
 
 ```bash
-gcp-security-analyzer analyze findings.csv
+GCP-Sec analyze findings.csv
 # → findings-report.md + findings-report.html
 
-gcp-security-analyzer analyze findings.csv -o security-report.md
+GCP-Sec analyze findings.csv -o security-report.md
 # → security-report.md + security-report.html
 ```
 
 ### `fetch` — Live SCC API
 
 ```bash
-gcp-security-analyzer fetch --org-id <ORG_ID> [options]
+GCP-Sec fetch --org-id <ORG_ID> [options]
 
 Options (in addition to all analyze options):
       --org-id <id>         GCP organization ID (required)
@@ -227,7 +227,7 @@ gcloud auth application-default login
 ### `stats` — Console summary (no files written)
 
 ```bash
-gcp-security-analyzer stats <input.csv> [-v]
+GCP-Sec stats <input.csv> [-v]
 ```
 
 Prints: priority distribution, risk score statistics, top categories, top projects, compliance frameworks.
@@ -235,7 +235,7 @@ Prints: priority distribution, risk score statistics, top categories, top projec
 ### `filter` — Export filtered CSV
 
 ```bash
-gcp-security-analyzer filter <input.csv> [filter options] -o filtered.csv
+GCP-Sec filter <input.csv> [filter options] -o filtered.csv
 ```
 
 Applies the same filters as `analyze` but outputs CSV only.
@@ -533,7 +533,7 @@ Report
 ### Example 1: Basic CSV analysis (default output)
 
 ```bash
-gcp-security-analyzer analyze findings.csv
+GCP-Sec analyze findings.csv
 ```
 
 1. `root.go` dispatches to `runAnalyze`
@@ -553,7 +553,7 @@ gcp-security-analyzer analyze findings.csv
 ### Example 2: Full pipeline with AI enrichment
 
 ```bash
-gcp-security-analyzer analyze findings.csv \
+GCP-Sec analyze findings.csv \
   --include-remediation \
   --include-compliance \
   --ai-enhance \
@@ -575,7 +575,7 @@ gcp-security-analyzer analyze findings.csv \
 
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
-gcp-security-analyzer fetch \
+GCP-Sec fetch \
   --org-id 123456789012 \
   --days 14 \
   --priority critical,high \
@@ -598,10 +598,10 @@ gcp-security-analyzer fetch \
 
 ```bash
 # Console summary only, no files
-gcp-security-analyzer stats findings.csv -v
+GCP-Sec stats findings.csv -v
 
 # Export only critical findings with score ≥ 75 to a new CSV
-gcp-security-analyzer filter findings.csv \
+GCP-Sec filter findings.csv \
   --priority critical \
   --min-risk-score 75 \
   -o critical-only.csv

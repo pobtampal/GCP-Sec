@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
+	"github.com/wanaware/GCP-Sec/internal/utils"
 )
 
 func TestMean(t *testing.T) {

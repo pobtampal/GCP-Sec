@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // ScriptGenerator produces finding-specific remediation scripts for CRITICAL findings.

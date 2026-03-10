@@ -512,7 +512,7 @@ li:last-child { margin-bottom: 0; }
     </div>
     <div class="card-body">
       <p>Reads a CSV export from GCP SCC and runs the full analysis pipeline.</p>
-      <pre>gcp-security-analyzer analyze &lt;input.csv&gt; [options]
+      <pre>GCP-Sec analyze &lt;input.csv&gt; [options]
 
 -o, --output &lt;path&gt;       Output file; stem used for multi-format naming
 -f, --format &lt;fmt&gt;        Single format: markdown | html | json | csv
@@ -530,10 +530,10 @@ li:last-child { margin-bottom: 0; }
 
       <div class="callout">
         <strong>Default behavior:</strong> no format flags → generates both <code>.md</code> and <code>.html</code> using the input filename stem.
-        <pre style="margin-top:8px">gcp-security-analyzer analyze findings.csv
+        <pre style="margin-top:8px">GCP-Sec analyze findings.csv
 # → findings-report.md + findings-report.html
 
-gcp-security-analyzer analyze findings.csv -o security-report.md
+GCP-Sec analyze findings.csv -o security-report.md
 # → security-report.md + security-report.html</pre>
       </div>
     </div>
@@ -546,7 +546,7 @@ gcp-security-analyzer analyze findings.csv -o security-report.md
     </div>
     <div class="card-body">
       <p>Connects to the GCP Security Command Center API and retrieves live findings without needing a CSV export. Accepts all the same options as <code>analyze</code>.</p>
-      <pre>gcp-security-analyzer fetch --org-id &lt;ORG_ID&gt; [options]
+      <pre>GCP-Sec fetch --org-id &lt;ORG_ID&gt; [options]
 
     --org-id &lt;id&gt;   GCP organization ID (required)
     --days &lt;n&gt;      Lookback window in days (default 7)
@@ -562,7 +562,7 @@ gcp-security-analyzer analyze findings.csv -o security-report.md
       <h2>Console summary (no files written)</h2>
     </div>
     <div class="card-body">
-      <pre>gcp-security-analyzer stats &lt;input.csv&gt; [-v]</pre>
+      <pre>GCP-Sec stats &lt;input.csv&gt; [-v]</pre>
       <p>Prints priority distribution, risk score statistics (mean, median, range, stddev), top categories, top projects, and detected compliance frameworks to stdout. No output files are written.</p>
     </div>
   </div>
@@ -573,7 +573,7 @@ gcp-security-analyzer analyze findings.csv -o security-report.md
       <h2>Export filtered CSV</h2>
     </div>
     <div class="card-body">
-      <pre>gcp-security-analyzer filter &lt;input.csv&gt; [filter options] -o filtered.csv</pre>
+      <pre>GCP-Sec filter &lt;input.csv&gt; [filter options] -o filtered.csv</pre>
       <p>Parses, scores, and filters findings, then writes the results as a new CSV. Useful for narrowing down findings for follow-up workflows.</p>
     </div>
   </div>
@@ -885,7 +885,7 @@ gcp-security-analyzer analyze findings.csv -o security-report.md
   <div class="card">
     <div class="card-head"><h2>Example 1 — Basic CSV analysis (default output)</h2></div>
     <div class="card-body">
-      <pre>gcp-security-analyzer analyze findings.csv</pre>
+      <pre>GCP-Sec analyze findings.csv</pre>
       <ol>
         <li><code>root.go</code> dispatches to <code>runAnalyze</code></li>
         <li><code>ExtractPositional</code> identifies <code>findings.csv</code> as the positional argument</li>
@@ -907,7 +907,7 @@ gcp-security-analyzer analyze findings.csv -o security-report.md
   <div class="card">
     <div class="card-head"><h2>Example 2 — Full pipeline with AI enrichment</h2></div>
     <div class="card-body">
-      <pre>gcp-security-analyzer analyze findings.csv \
+      <pre>GCP-Sec analyze findings.csv \
   --include-remediation \
   --include-compliance \
   --ai-enhance \
@@ -932,7 +932,7 @@ gcp-security-analyzer analyze findings.csv -o security-report.md
     <div class="card-body">
       <pre>gcloud auth application-default login
 
-gcp-security-analyzer fetch \
+GCP-Sec fetch \
   --org-id 123456789012 \
   --days 14 \
   --priority critical,high \

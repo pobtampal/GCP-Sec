@@ -1,4 +1,4 @@
-# gcp-security-analyzer
+# GCP-Sec
 
 A production-ready Go CLI for analyzing [GCP Security Command Center](https://cloud.google.com/security-command-center) findings exported as CSV. It applies a multi-factor risk scoring algorithm, detects compliance violations, generates remediation guidance, and produces reports in Markdown, JSON, HTML, and CSV formats.
 
@@ -26,26 +26,26 @@ A production-ready Go CLI for analyzing [GCP Security Command Center](https://cl
 make build
 
 # Analyze your findings
-./dist/gcp-security-analyzer analyze my-findings.csv
+./dist/GCP-Sec analyze my-findings.csv
 
 # Full report with remediation and compliance details
-./dist/gcp-security-analyzer analyze my-findings.csv \
+./dist/GCP-Sec analyze my-findings.csv \
   --output security-report.md \
   --include-remediation \
   --include-compliance
 
 # Generate all formats at once
-./dist/gcp-security-analyzer analyze my-findings.csv \
+./dist/GCP-Sec analyze my-findings.csv \
   --output-dir ./reports \
   --formats markdown,json,html,csv \
   --include-remediation \
   --include-compliance
 
 # Quick statistics summary
-./dist/gcp-security-analyzer stats my-findings.csv
+./dist/GCP-Sec stats my-findings.csv
 
 # Filter and export high/critical findings to CSV
-./dist/gcp-security-analyzer filter my-findings.csv \
+./dist/GCP-Sec filter my-findings.csv \
   --priority high,critical \
   --output high-critical.csv
 ```
@@ -95,16 +95,16 @@ go install github.com/securego/gosec/v2/cmd/gosec@latest
 ### Build from source (recommended)
 
 ```bash
-git clone https://github.com/wanaware/gcp-security-analyzer.git
-cd gcp-security-analyzer
-make build               # output: ./dist/gcp-security-analyzer
+git clone https://github.com/wanaware/GCP-Sec.git
+cd GCP-Sec
+make build               # output: ./dist/GCP-Sec
 make install             # installs to $GOPATH/bin
 ```
 
 ### Using `go install`
 
 ```bash
-go install github.com/wanaware/gcp-security-analyzer@latest
+go install github.com/wanaware/GCP-Sec@latest
 ```
 
 ---
@@ -144,7 +144,7 @@ gcloud scc findings list YOUR_ORG_ID \
 ### `analyze` — Full analysis and report generation
 
 ```
-gcp-security-analyzer analyze <input.csv> [options]
+GCP-Sec analyze <input.csv> [options]
 
 Options:
   -o, --output string           Output file path (default: report.md)
@@ -167,28 +167,28 @@ Options:
 
 ```bash
 # Markdown report (default)
-gcp-security-analyzer analyze findings.csv
+GCP-Sec analyze findings.csv
 
 # JSON report for automation/pipelines
-gcp-security-analyzer analyze findings.csv -f json -o findings-report.json
+GCP-Sec analyze findings.csv -f json -o findings-report.json
 
 # HTML interactive dashboard
-gcp-security-analyzer analyze findings.csv -f html -o dashboard.html
+GCP-Sec analyze findings.csv -f html -o dashboard.html
 
 # Only HIGH and CRITICAL findings
-gcp-security-analyzer analyze findings.csv -p high,critical -o high-risk.md
+GCP-Sec analyze findings.csv -p high,critical -o high-risk.md
 
 # Generate split files per priority
-gcp-security-analyzer analyze findings.csv \
+GCP-Sec analyze findings.csv \
   --output-dir ./reports \
   --formats markdown \
   --split-by-priority
 
 # Only findings with risk score > 50
-gcp-security-analyzer analyze findings.csv --min-risk-score 50
+GCP-Sec analyze findings.csv --min-risk-score 50
 
 # Filter by GCP project
-gcp-security-analyzer analyze findings.csv --project my-project-id
+GCP-Sec analyze findings.csv --project my-project-id
 ```
 
 ---
@@ -196,7 +196,7 @@ gcp-security-analyzer analyze findings.csv --project my-project-id
 ### `stats` — Statistics summary
 
 ```
-gcp-security-analyzer stats <input.csv> [options]
+GCP-Sec stats <input.csv> [options]
 
 Options:
   -v, --verbose     Verbose logging
@@ -214,7 +214,7 @@ Prints a summary to stdout showing:
 ### `filter` — Filter and export to CSV
 
 ```
-gcp-security-analyzer filter <input.csv> [options]
+GCP-Sec filter <input.csv> [options]
 
 Options:
   -p, --priority string         Filter by priority (comma-separated)
@@ -229,15 +229,15 @@ Options:
 
 ```bash
 # Export high/critical findings to a new CSV
-gcp-security-analyzer filter findings.csv -p high,critical -o critical.csv
+GCP-Sec filter findings.csv -p high,critical -o critical.csv
 
 # Export only container vulnerabilities
-gcp-security-analyzer filter findings.csv \
+GCP-Sec filter findings.csv \
   -c CONTAINER_IMAGE_VULNERABILITY \
   -o container-vulns.csv
 
 # Pipe to other tools
-gcp-security-analyzer filter findings.csv -p critical | wc -l
+GCP-Sec filter findings.csv -p critical | wc -l
 ```
 
 ---
@@ -245,7 +245,7 @@ gcp-security-analyzer filter findings.csv -p critical | wc -l
 ### `fetch` — Pull live findings from GCP SCC API
 
 ```
-gcp-security-analyzer fetch [options]
+GCP-Sec fetch [options]
 
 Options:
       --org-id string     GCP organization ID (required)
@@ -263,10 +263,10 @@ Options:
 
 ```bash
 # Fetch and analyze last 7 days of findings
-gcp-security-analyzer fetch --org-id 123456789
+GCP-Sec fetch --org-id 123456789
 
 # Fetch last 30 days, save raw CSV, generate HTML report
-gcp-security-analyzer fetch --org-id 123456789 \
+GCP-Sec fetch --org-id 123456789 \
   --days 30 \
   --save-csv raw-findings.csv \
   -f html -o dashboard.html
@@ -394,7 +394,7 @@ make run-all-formats
 ### Project Structure
 
 ```
-gcp-security-analyzer/
+GCP-Sec/
 ├── main.go                        # Entry point
 ├── go.mod
 ├── Makefile

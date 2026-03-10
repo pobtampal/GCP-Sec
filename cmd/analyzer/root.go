@@ -1,4 +1,4 @@
-// Package analyzer implements the CLI commands for gcp-security-analyzer.
+// Package analyzer implements the CLI commands for GCP-Sec.
 package analyzer
 
 import (
@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
+	"github.com/wanaware/GCP-Sec/internal/utils"
 )
 
 // Config holds global CLI configuration shared between subcommands.
@@ -53,7 +53,7 @@ func Execute(args []string) int {
 		printUsage()
 		return 0
 	case "version", "--version":
-		fmt.Println("gcp-security-analyzer v1.0.0")
+		fmt.Println("GCP-Sec v1.0.0")
 		return 0
 	default:
 		fmt.Fprintf(os.Stderr, "Error: unknown command %q\n\n", cmd)
@@ -63,10 +63,10 @@ func Execute(args []string) int {
 }
 
 func printUsage() {
-	fmt.Print(`gcp-security-analyzer - GCP Security Command Center findings analyzer
+	fmt.Print(`GCP-Sec - GCP Security Command Center findings analyzer
 
 USAGE:
-  gcp-security-analyzer <command> [options] [input.csv]
+  GCP-Sec <command> [options] [input.csv]
 
 COMMANDS:
   analyze     Analyze findings from a CSV file and generate a report
@@ -111,18 +111,18 @@ FILTER OPTIONS:
   -o, --output <path>         Output CSV file
 
 EXAMPLES:
-  gcp-security-analyzer analyze findings.csv
+  GCP-Sec analyze findings.csv
       # writes findings-report.md + findings-report.html (default)
-  gcp-security-analyzer analyze findings.csv -o security-report.md --include-remediation
+  GCP-Sec analyze findings.csv -o security-report.md --include-remediation
       # writes security-report.md + security-report.html
-  gcp-security-analyzer analyze findings.csv --format json -o report.json
+  GCP-Sec analyze findings.csv --format json -o report.json
       # single format override
-  gcp-security-analyzer analyze findings.csv --formats markdown,json,html -d ./reports
+  GCP-Sec analyze findings.csv --formats markdown,json,html -d ./reports
       # explicit multi-format into a directory
-  gcp-security-analyzer fetch --org-id 123456789 --days 7 -o report.md
+  GCP-Sec fetch --org-id 123456789 --days 7 -o report.md
       # writes report.md + report.html
-  gcp-security-analyzer fetch --org-id 123456789 --days 30 --save-csv raw.csv --include-remediation
-  gcp-security-analyzer stats findings.csv
-  gcp-security-analyzer filter findings.csv --priority high,critical -o high-findings.csv
+  GCP-Sec fetch --org-id 123456789 --days 30 --save-csv raw.csv --include-remediation
+  GCP-Sec stats findings.csv
+  GCP-Sec filter findings.csv --priority high,critical -o high-findings.csv
 `)
 }

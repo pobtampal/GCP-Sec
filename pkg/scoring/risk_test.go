@@ -3,7 +3,7 @@ package scoring
 import (
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // helper builds a bare finding with only the specified severity and category set.

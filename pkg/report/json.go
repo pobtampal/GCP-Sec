@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // JSONGenerator writes JSON-formatted reports.

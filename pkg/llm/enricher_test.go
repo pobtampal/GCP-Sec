@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // claudeOKResponse builds a minimal Claude API response wrapping the given JSON body.

@@ -45,7 +45,7 @@ go version
 
 # 2. Build the analyzer
 cd /path/to/GCP-Sec
-go build -o gcp-security-analyzer .
+go build -o GCP-Sec .
 
 # 3. Authenticate to GCP (for live demo)
 gcloud auth application-default login
@@ -58,8 +58,8 @@ gcloud organizations list
 
 | Option | Command | Best For |
 |--------|---------|----------|
-| **Live fetch** | `./gcp-security-analyzer fetch --org-id <ORG_ID>` | Maximum impact — real findings |
-| **CSV analysis** | `./gcp-security-analyzer analyze findings.csv` | Reliable, repeatable demo |
+| **Live fetch** | `./GCP-Sec fetch --org-id <ORG_ID>` | Maximum impact — real findings |
+| **CSV analysis** | `./GCP-Sec analyze findings.csv` | Reliable, repeatable demo |
 
 > **Recommendation**: Use a pre-exported CSV for a reliable demo. Have the live fetch ready as a backup to show API integration.
 
@@ -91,7 +91,7 @@ head -1 findings.csv         # Show the complexity: 60+ columns
 **Run the analyzer:**
 
 ```bash
-./gcp-security-analyzer analyze findings.csv -v
+./GCP-Sec analyze findings.csv -v
 ```
 
 **Narrate the output as it appears:**
@@ -180,7 +180,7 @@ DRY_RUN=true ./remediation-scripts/<script-name>-remediate.sh
 ### Act 5: Live Fetch (2 minutes — optional)
 
 ```bash
-./gcp-security-analyzer fetch --org-id <ORG_ID> --days 7 --save-csv latest-findings.csv -v
+./GCP-Sec fetch --org-id <ORG_ID> --days 7 --save-csv latest-findings.csv -v
 ```
 
 > *"This pulls findings directly from the Security Command Center API in real-time — no manual CSV export needed. It can be integrated into a CI/CD pipeline or scheduled cron job for continuous monitoring."*
@@ -193,19 +193,19 @@ DRY_RUN=true ./remediation-scripts/<script-name>-remediate.sh
 
 ```bash
 # Show only CRITICAL and HIGH findings
-./gcp-security-analyzer analyze findings.csv -p critical,high
+./GCP-Sec analyze findings.csv -p critical,high
 
 # Focus on a specific category
-./gcp-security-analyzer analyze findings.csv -c OPEN_FIREWALL
+./GCP-Sec analyze findings.csv -c OPEN_FIREWALL
 
 # Filter by risk score threshold
-./gcp-security-analyzer analyze findings.csv --min-risk-score 75
+./GCP-Sec analyze findings.csv --min-risk-score 75
 ```
 
 **Split reports by priority:**
 
 ```bash
-./gcp-security-analyzer analyze findings.csv --split-by-priority -d ./reports
+./GCP-Sec analyze findings.csv --split-by-priority -d ./reports
 # Produces: reports/findings-report-critical.md, findings-report-high.md, etc.
 ```
 
@@ -213,7 +213,7 @@ DRY_RUN=true ./remediation-scripts/<script-name>-remediate.sh
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
-./gcp-security-analyzer analyze findings.csv --ai-enhance
+./GCP-Sec analyze findings.csv --ai-enhance
 ```
 
 > *"The AI enhancement sends CRITICAL findings to Claude for deeper analysis — context-aware remediation recommendations that go beyond template-based guidance."*

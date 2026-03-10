@@ -447,7 +447,7 @@ head -1 findings.csv         # 60+ columns of raw data</code></pre>
     <div class="act-num">Act 2 &mdash; 2 minutes</div>
     <h3>One-Command Analysis</h3>
     <p>Run the analyzer and narrate each phase as it prints:</p>
-    <pre><code>./gcp-security-analyzer analyze findings.csv -v</code></pre>
+    <pre><code>./GCP-Sec analyze findings.csv -v</code></pre>
     <div class="narrative">"The tool is scoring each finding on a 0-to-100 scale&hellip; detecting compliance violations&hellip; generating remediation scripts for every CRITICAL finding&hellip; and producing reports. Done."</div>
     <p>Point out the summary output:</p>
     <pre><code>&mdash;&mdash; Analysis Complete &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
@@ -496,7 +496,7 @@ DRY_RUN=true ./remediation-scripts/&lt;script&gt;-remediate.sh</code></pre>
   <div class="act">
     <div class="act-num">Act 5 &mdash; 2 minutes (Optional)</div>
     <h3>Live API Fetch</h3>
-    <pre><code>./gcp-security-analyzer fetch --org-id &lt;ORG_ID&gt; --days 7 -v</code></pre>
+    <pre><code>./GCP-Sec fetch --org-id &lt;ORG_ID&gt; --days 7 -v</code></pre>
     <div class="narrative">"This pulls findings directly from the Security Command Center API in real-time. It can be scheduled for continuous monitoring &mdash; no manual CSV exports."</div>
   </div>
 
@@ -504,17 +504,17 @@ DRY_RUN=true ./remediation-scripts/&lt;script&gt;-remediate.sh</code></pre>
     <div class="act-num">Act 6 &mdash; 2 minutes</div>
     <h3>Advanced Capabilities</h3>
     <pre><code># Filter by priority
-./gcp-security-analyzer analyze findings.csv -p critical,high
+./GCP-Sec analyze findings.csv -p critical,high
 
 # Filter by risk score
-./gcp-security-analyzer analyze findings.csv --min-risk-score 75
+./GCP-Sec analyze findings.csv --min-risk-score 75
 
 # Split reports by priority
-./gcp-security-analyzer analyze findings.csv --split-by-priority -d ./reports
+./GCP-Sec analyze findings.csv --split-by-priority -d ./reports
 
 # AI enhancement (optional)
 export ANTHROPIC_API_KEY="sk-ant-..."
-./gcp-security-analyzer analyze findings.csv --ai-enhance</code></pre>
+./GCP-Sec analyze findings.csv --ai-enhance</code></pre>
   </div>
 
   <div class="act">

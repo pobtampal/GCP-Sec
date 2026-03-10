@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/pkg/scoring"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/pkg/scoring"
 )
 
 func approxEq(a, b float64) bool { return math.Abs(a-b) < 1e-9 }

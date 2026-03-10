@@ -6,11 +6,11 @@ import (
 	"os"
 	"sort"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
-	"github.com/wanaware/gcp-security-analyzer/pkg/compliance"
-	"github.com/wanaware/gcp-security-analyzer/pkg/parser"
-	"github.com/wanaware/gcp-security-analyzer/pkg/report"
-	"github.com/wanaware/gcp-security-analyzer/pkg/scoring"
+	"github.com/wanaware/GCP-Sec/internal/utils"
+	"github.com/wanaware/GCP-Sec/pkg/compliance"
+	"github.com/wanaware/GCP-Sec/pkg/parser"
+	"github.com/wanaware/GCP-Sec/pkg/report"
+	"github.com/wanaware/GCP-Sec/pkg/scoring"
 )
 
 var statsValueFlags = map[string]bool{} // stats has no value-taking flags
@@ -28,7 +28,7 @@ func runStats(args []string) int {
 	}
 
 	if inputFile == "" {
-		fmt.Fprintf(os.Stderr, "Error: input CSV file is required\n\nUsage: gcp-security-analyzer stats <input.csv>\n")
+		fmt.Fprintf(os.Stderr, "Error: input CSV file is required\n\nUsage: GCP-Sec stats <input.csv>\n")
 		return 1
 	}
 

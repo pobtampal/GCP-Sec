@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/wanaware/gcp-security-analyzer/pkg/fetcher"
+	"github.com/wanaware/GCP-Sec/pkg/fetcher"
 )
 
 // FetchFlags holds parsed CLI flags for the fetch command.
@@ -56,7 +56,7 @@ func runFetch(args []string) int {
 	}
 
 	if ff.OrgID == "" {
-		fmt.Fprintf(os.Stderr, "Error: --org-id is required\n\nUsage: gcp-security-analyzer fetch --org-id <ORG_ID> [options]\n")
+		fmt.Fprintf(os.Stderr, "Error: --org-id is required\n\nUsage: GCP-Sec fetch --org-id <ORG_ID> [options]\n")
 		return 1
 	}
 

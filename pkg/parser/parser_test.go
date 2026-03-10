@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/pkg/parser"
+	"github.com/wanaware/GCP-Sec/pkg/parser"
 )
 
 const sampleCSV = `name,finding_class,category,state,severity,resource_name,resource_display_name,project_id,project_display_name,description,finding.next_steps,finding.vulnerability.cve.id,finding.vulnerability.cve.cvssv3,finding.vulnerability.cve.observed_in_the_wild,finding.vulnerability.cve.zero_day,finding.external_exposure.public_ip_address,finding.compliances

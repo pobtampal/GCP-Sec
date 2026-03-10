@@ -45,12 +45,12 @@ This guide covers how to configure, run, and interpret results from the GCP Secu
 
 ```bash
 # Clone the repository
-git clone https://github.com/wanaware/gcp-security-analyzer.git
-cd gcp-security-analyzer
+git clone https://github.com/wanaware/GCP-Sec.git
+cd GCP-Sec
 
 # Build the binary
 make build
-# Binary is at: ./dist/gcp-security-analyzer
+# Binary is at: ./dist/GCP-Sec
 
 # Or install to your GOPATH/bin
 make install
@@ -59,10 +59,10 @@ make install
 Verify the installation:
 
 ```bash
-./dist/gcp-security-analyzer version
-# Output: gcp-security-analyzer v1.0.0
+./dist/GCP-Sec version
+# Output: GCP-Sec v1.0.0
 
-./dist/gcp-security-analyzer help
+./dist/GCP-Sec help
 ```
 
 ---
@@ -139,7 +139,7 @@ This is the recommended approach. It fetches active findings directly from the G
 **Basic usage — fetch last 7 days:**
 
 ```bash
-./dist/gcp-security-analyzer fetch \
+./dist/GCP-Sec fetch \
   --org-id 123456789 \
   -o report.md \
   --verbose
@@ -148,7 +148,7 @@ This is the recommended approach. It fetches active findings directly from the G
 **Fetch last 30 days with remediation and compliance:**
 
 ```bash
-./dist/gcp-security-analyzer fetch \
+./dist/GCP-Sec fetch \
   --org-id 123456789 \
   --days 30 \
   -o report.md \
@@ -160,7 +160,7 @@ This is the recommended approach. It fetches active findings directly from the G
 **Fetch and also save raw findings as CSV for later use:**
 
 ```bash
-./dist/gcp-security-analyzer fetch \
+./dist/GCP-Sec fetch \
   --org-id 123456789 \
   --days 14 \
   -o report.md \
@@ -183,13 +183,13 @@ All analysis flags (`-o`, `-f`, `--priority`, `--include-remediation`, etc.) als
 If you already have a CSV export from GCP SCC, use the `analyze` command:
 
 ```bash
-./dist/gcp-security-analyzer analyze findings.csv -o report.md --verbose
+./dist/GCP-Sec analyze findings.csv -o report.md --verbose
 ```
 
 **With all the bells and whistles:**
 
 ```bash
-./dist/gcp-security-analyzer analyze findings.csv \
+./dist/GCP-Sec analyze findings.csv \
   -o report.md \
   --include-remediation \
   --include-compliance \
@@ -214,7 +214,7 @@ gcloud scc findings list organizations/123456789/sources/- \
 Then analyze with:
 
 ```bash
-./dist/gcp-security-analyzer analyze findings.csv -o report.md
+./dist/GCP-Sec analyze findings.csv -o report.md
 ```
 
 ---
@@ -288,16 +288,16 @@ The tool supports four output formats:
 
 ```bash
 # Markdown (default)
-./dist/gcp-security-analyzer analyze findings.csv -f markdown -o report.md
+./dist/GCP-Sec analyze findings.csv -f markdown -o report.md
 
 # JSON (machine-readable)
-./dist/gcp-security-analyzer analyze findings.csv -f json -o report.json
+./dist/GCP-Sec analyze findings.csv -f json -o report.json
 
 # HTML (browser-viewable)
-./dist/gcp-security-analyzer analyze findings.csv -f html -o report.html
+./dist/GCP-Sec analyze findings.csv -f html -o report.html
 
 # CSV (spreadsheet-friendly)
-./dist/gcp-security-analyzer analyze findings.csv -f csv -o report.csv
+./dist/GCP-Sec analyze findings.csv -f csv -o report.csv
 ```
 
 ### Filtering
@@ -306,16 +306,16 @@ Filter findings before report generation:
 
 ```bash
 # Only critical and high priority findings
-./dist/gcp-security-analyzer fetch --org-id 123456789 --priority critical,high -o critical-report.md
+./dist/GCP-Sec fetch --org-id 123456789 --priority critical,high -o critical-report.md
 
 # Only container vulnerabilities
-./dist/gcp-security-analyzer fetch --org-id 123456789 --category CONTAINER_IMAGE_VULNERABILITY -o vulns.md
+./dist/GCP-Sec fetch --org-id 123456789 --category CONTAINER_IMAGE_VULNERABILITY -o vulns.md
 
 # Only a specific project
-./dist/gcp-security-analyzer fetch --org-id 123456789 --project prod-project -o prod-report.md
+./dist/GCP-Sec fetch --org-id 123456789 --project prod-project -o prod-report.md
 
 # Filter by risk score range
-./dist/gcp-security-analyzer fetch --org-id 123456789 --min-risk-score 75 -o critical-only.md
+./dist/GCP-Sec fetch --org-id 123456789 --min-risk-score 75 -o critical-only.md
 ```
 
 ### Multi-Format Output
@@ -324,12 +324,12 @@ Generate reports in multiple formats at once:
 
 ```bash
 # Generate markdown, JSON, and HTML in the reports/ directory
-./dist/gcp-security-analyzer fetch --org-id 123456789 \
+./dist/GCP-Sec fetch --org-id 123456789 \
   --formats markdown,json,html \
   --output-dir ./reports
 
 # Split by priority level (one file per priority)
-./dist/gcp-security-analyzer fetch --org-id 123456789 \
+./dist/GCP-Sec fetch --org-id 123456789 \
   --formats markdown \
   --output-dir ./reports \
   --split-by-priority
@@ -340,7 +340,7 @@ Generate reports in multiple formats at once:
 When `--include-remediation` is used, the tool also generates per-finding shell scripts in a `remediation-scripts/` subdirectory:
 
 ```bash
-./dist/gcp-security-analyzer fetch --org-id 123456789 \
+./dist/GCP-Sec fetch --org-id 123456789 \
   -o report.md \
   --include-remediation
 
@@ -358,7 +358,7 @@ Enrich CRITICAL findings with AI-generated context using Claude:
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-./dist/gcp-security-analyzer fetch --org-id 123456789 \
+./dist/GCP-Sec fetch --org-id 123456789 \
   -o report.md \
   --ai-enhance \
   --include-remediation

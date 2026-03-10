@@ -3,8 +3,8 @@ package scoring_test
 import (
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/pkg/scoring"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/pkg/scoring"
 )
 
 func scoredFinding(priority string, score float64) *models.Finding {

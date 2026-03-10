@@ -96,7 +96,7 @@ jobs:
           cache: true
 
       - name: Build binary (for filesystem scan)
-        run: go build -o gcp-security-analyzer .
+        run: go build -o GCP-Sec .
 
       - name: Create report directory
         run: mkdir -p ${{ env.REPORT_DIR }}

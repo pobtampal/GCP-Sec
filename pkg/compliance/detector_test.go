@@ -3,8 +3,8 @@ package compliance_test
 import (
 	"testing"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/pkg/compliance"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/pkg/compliance"
 )
 
 func TestDetectViolations_Compliances(t *testing.T) {

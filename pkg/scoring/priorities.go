@@ -3,8 +3,8 @@ package scoring
 import (
 	"sort"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/utils"
 )
 
 // FilterByPriority returns findings whose priority is in the allowed set.

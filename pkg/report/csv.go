@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/models"
 )
 
 // CSVGenerator writes findings as CSV with risk score columns appended.

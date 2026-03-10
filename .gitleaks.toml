@@ -1,4 +1,4 @@
-title = "gcp-security-analyzer gitleaks config"
+title = "GCP-Sec gitleaks config"
 
 [allowlist]
   description = "Global allowlist"

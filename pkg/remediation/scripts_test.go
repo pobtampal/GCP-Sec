@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/pkg/remediation"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/pkg/remediation"
 )
 
 // ── parseResourceName tests ──────────────────────────────────────────────────

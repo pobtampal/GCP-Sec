@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wanaware/gcp-security-analyzer/internal/models"
-	"github.com/wanaware/gcp-security-analyzer/internal/utils"
-	"github.com/wanaware/gcp-security-analyzer/pkg/compliance"
-	"github.com/wanaware/gcp-security-analyzer/pkg/llm"
-	"github.com/wanaware/gcp-security-analyzer/pkg/remediation"
-	"github.com/wanaware/gcp-security-analyzer/pkg/report"
-	"github.com/wanaware/gcp-security-analyzer/pkg/scoring"
+	"github.com/wanaware/GCP-Sec/internal/models"
+	"github.com/wanaware/GCP-Sec/internal/utils"
+	"github.com/wanaware/GCP-Sec/pkg/compliance"
+	"github.com/wanaware/GCP-Sec/pkg/llm"
+	"github.com/wanaware/GCP-Sec/pkg/remediation"
+	"github.com/wanaware/GCP-Sec/pkg/report"
+	"github.com/wanaware/GCP-Sec/pkg/scoring"
 )
 
 // PipelineInput holds all inputs to the shared analysis pipeline.
