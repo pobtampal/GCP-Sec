@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GCP Security Analyzer — How It Works</title>
+<style>
+:root {
+  --navy:     #0f172a;
+  --blue:     #2563eb;
+  --blue-lt:  #3b82f6;
+  --blue-bg:  #eff6ff;
+  --red:      #dc2626;
+  --red-bg:   #fef2f2;
+  --amber:    #b45309;
+  --amber-bg: #fffbeb;
+  --green:    #166534;
+  --green-bg: #f0fdf4;
+  --purple:   #7c3aed;
+  --purple-bg:#f5f3ff;
+  --teal:     #0f766e;
+  --teal-bg:  #f0fdfa;
+  --page-bg:  #f8fafc;
+  --card:     #ffffff;
+  --border:   #e2e8f0;
+  --t1:       #0f172a;
+  --t2:       #475569;
+  --t3:       #94a3b8;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--t1);
+  background: var(--page-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ── Hero ─────────────────────────────────────────── */
+.hero {
+  background: var(--navy);
+  color: #fff;
+  padding: 52px 44px;
+  border-radius: 14px;
+  margin-bottom: 44px;
+}
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+.hero .subtitle {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  max-width: 640px;
+}
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+.badge {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e2e8f0;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* ── Section headings ─────────────────────────────── */
+.section {
+  margin-bottom: 52px;
+}
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 8px;
+}
+.section-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+  margin-bottom: 14px;
+}
+.section-body {
+  color: var(--t2);
+  max-width: 780px;
+  margin-bottom: 28px;
+}
+
+/* ── Cards ────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 26px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--navy);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-body {
+  color: var(--t2);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+.card-path {
+  font-size: 0.75rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--t3);
+  margin-bottom: 8px;
+}
+
+/* ── Color chips ──────────────────────────────────── */
+.chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.chip-blue   { background: var(--blue-bg);   color: var(--blue); }
+.chip-green  { background: var(--green-bg);  color: var(--green); }
+.chip-red    { background: var(--red-bg);    color: var(--red); }
+.chip-amber  { background: var(--amber-bg);  color: var(--amber); }
+.chip-purple { background: var(--purple-bg); color: var(--purple); }
+.chip-teal   { background: var(--teal-bg);   color: var(--teal); }
+.chip-navy   { background: #f1f5f9;          color: var(--navy); }
+
+/* ── Pipeline flow ────────────────────────────────── */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 28px 0;
+}
+.pipe-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 18px 22px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  position: relative;
+}
+.pipe-step:first-child { border-radius: 10px 10px 0 0; }
+.pipe-step:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 10px 10px; }
+.pipe-step:last-child .pipe-arrow { display: none; }
+.pipe-num {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.pipe-content { flex: 1; }
+.pipe-content strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--navy);
+  margin-bottom: 3px;
+}
+.pipe-content span {
+  font-size: 0.88rem;
+  color: var(--t2);
+}
+
+/* ── Grid layouts ─────────────────────────────────── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 680px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Score breakdown ──────────────────────────────── */
+.score-bar {
+  margin: 10px 0 4px;
+}
+.score-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--t2);
+  margin-bottom: 4px;
+}
+.bar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--blue);
+}
+
+/* ── SAST architecture ───────────────────────────── */
+.arch-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.arch-label {
+  background: var(--navy);
+  color: #fff;
+  padding: 18px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+}
+.arch-body {
+  background: var(--card);
+  padding: 16px 20px;
+  font-size: 0.88rem;
+  color: var(--t2);
+  line-height: 1.65;
+}
+.arch-body strong { color: var(--navy); }
+
+/* ── Tool cards ──────────────────────────────────── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 10px;
+}
+@media (max-width: 640px) { .tool-grid { grid-template-columns: 1fr; } }
+
+.tool-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.tool-header {
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tool-body {
+  padding: 12px 18px;
+  font-size: 0.85rem;
+  color: var(--t2);
+  line-height: 1.6;
+  border-top: 1px solid var(--border);
+}
+.tool-body ul {
+  padding-left: 18px;
+}
+.tool-body li {
+  margin-bottom: 4px;
+}
+
+/* ── Icon ─────────────────────────────────────────── */
+.icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* ── Callout ─────────────────────────────────────── */
+.callout {
+  border-left: 4px solid var(--blue);
+  background: var(--blue-bg);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  color: var(--t2);
+  margin: 20px 0;
+}
+.callout strong { color: var(--navy); }
+
+/* ── Divider ─────────────────────────────────────── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 48px 0;
+}
+
+/* ── TOC ─────────────────────────────────────────── */
+.toc {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 26px;
+  margin-bottom: 44px;
+}
+.toc h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 12px;
+}
+.toc ol {
+  padding-left: 18px;
+  color: var(--blue);
+  font-size: 0.9rem;
+}
+.toc ol li { margin-bottom: 5px; }
+.toc a { color: var(--blue); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* ── Footer ──────────────────────────────────────── */
+.footer {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--t3);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Hero ──────────────────────────────────────── -->
+  <div class="hero">
+    <h1>GCP Security Analyzer — How It Works</h1>
+    <p class="subtitle">
+      A plain-English guide to every part of the system: what the Go programs do, how live findings are
+      pulled from Google Cloud, and how the SAST pipeline protects the codebase itself.
+    </p>
+    <div class="badge-row">
+      <span class="badge">Go · Command-Line Tool</span>
+      <span class="badge">GCP Security Command Center</span>
+      <span class="badge">SAST · CI/CD</span>
+      <span class="badge">GitHub Actions</span>
+    </div>
+  </div>
+
+  <!-- ── TOC ───────────────────────────────────────── -->
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#overview">What the tool does — the big picture</a></li>
+      <li><a href="#go-programs">The Go programs explained</a></li>
+      <li><a href="#live-findings">How live findings are pulled from GCP</a></li>
+      <li><a href="#tutorial">Tutorial: pull &amp; save live data as CSV</a></li>
+      <li><a href="#pipeline">The analysis pipeline, step by step</a></li>
+      <li><a href="#sast">The SAST security layer</a></li>
+      <li><a href="#architecture">How everything fits together</a></li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 1. OVERVIEW                                    -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="overview">
+    <p class="section-label">Section 1</p>
+    <h2 class="section-title">What the tool does — the big picture</h2>
+    <p class="section-body">
+      Google Cloud's built-in security service (Security Command Center, or SCC) continuously monitors
+      your GCP projects and flags anything that looks wrong: open firewall ports, exposed storage
+      buckets, unpatched containers, leaked credentials, and more. It can surface thousands of these
+      <em>findings</em> at once — but it doesn't tell you which ones to fix first, or how.
+    </p>
+    <p class="section-body">
+      The <strong>GCP Security Analyzer</strong> fills that gap. It ingests those raw findings — either
+      pulled live from the GCP API or from a CSV export — runs them through a multi-factor risk-scoring
+      algorithm, maps them against compliance frameworks, generates remediation scripts, and writes a
+      clean, prioritized report in your choice of format (Markdown, HTML, JSON, or CSV).
+    </p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><span class="icon">📥</span> Ingest</div>
+        <div class="card-body">Pull findings live from the GCP API or load a CSV export from Security Command Center.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🎯</span> Score &amp; Prioritize</div>
+        <div class="card-body">Every finding gets a risk score (0–100) based on severity, CVSS, exploitability, exposure, and compliance impact.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📄</span> Report</div>
+        <div class="card-body">Outputs a prioritized, actionable report with per-finding remediation steps and optional AI-enhanced guidance.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 2. GO PROGRAMS                                 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="go-programs">
+    <p class="section-label">Section 2</p>
+    <h2 class="section-title">The Go programs explained</h2>
+    <p class="section-body">
+      The codebase is split into three layers: a <strong>command layer</strong> (what you type at the
+      terminal), a <strong>package layer</strong> (the domain logic), and an <strong>internal
+      layer</strong> (shared utilities and data models). Here is what each file does.
+    </p>
+
+    <!-- CLI commands -->
+    <h3 style="font-size:1.1rem;font-weight:700;color:var(--navy);margin:24px 0 14px;">
+      Command Layer — what you run from the terminal
+    </h3>
+
+    <div class="card">
+      <div class="card-path">main.go</div>
+      <div class="card-title"><span class="chip chip-navy">Entry Point</span> main.go</div>
+      <div class="card-body">
+        The single entry point for the whole program. Its only job is to hand control to the command
+        dispatcher and exit with the right status code (0 = success, 1 = error). Everything else
+        happens elsewhere.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-path">cmd/analyzer/root.go</div>
+      <div class="card-title"><span class="chip chip-blue">Dispatcher</span> root.go — CLI router</div>
+      <div class="card-body">
+        Reads the first word you type after the binary name and routes to the right command:
+        <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.8rem;">analyze</code>,
+        <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.8rem;">fetch</code>,
+        <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.8rem;">stats</code>, or
+        <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.8rem;">filter</code>.
+        Also sets up the global logger (verbose / debug mode) before any command runs.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-path">cmd/analyzer/analyze.go</div>
+      <div class="card-title"><span class="chip chip-blue">Command</span> analyze — process a CSV file</div>
+      <div class="card-body">
+        The most commonly used command. You give it a CSV file exported from GCP Security Command
+        Center; it parses it, runs the full analysis pipeline, and writes the report.
+        Supports filtering by priority, category, project, or risk score range, and can write
+        separate report files per severity level (Critical-only, High-only, etc.).
+        <br/><br/>
+        <em>Example:</em>
+        <code style="display:block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;margin-top:8px;font-size:0.82rem;font-family:'SF Mono','Fira Code',monospace;">
+          GCP-Sec analyze findings.csv --priority critical,high --include-remediation
+        </code>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-path">cmd/analyzer/fetch.go</div>
+      <div class="card-title"><span class="chip chip-green">Command</span> fetch — pull live from GCP</div>
+      <div class="card-body">
+        Instead of using a CSV file, <strong>fetch</strong> connects directly to the GCP Security
+        Command Center API in real time. You supply your GCP Organization ID and a lookback window
+        (e.g. the last 7 days), and it retrieves all currently active findings automatically.
+        From that point on, the analysis pipeline is identical to the <em>analyze</em> command.
+        You can optionally save the raw fetched data as a CSV file for later use.
+        <br/><br/>
+        <em>Example:</em>
+        <code style="display:block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;margin-top:8px;font-size:0.82rem;font-family:'SF Mono','Fira Code',monospace;">
+          GCP-Sec fetch --org-id 123456789 --days 14 --save-csv raw.csv
+        </code>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-path">cmd/analyzer/stats.go</div>
+      <div class="card-title"><span class="chip chip-amber">Command</span> stats — quick summary</div>
+      <div class="card-body">
+        A lightweight read-only command. It parses and scores a CSV file but does not write any
+        report file. Instead it prints a quick dashboard to the terminal: total findings, breakdown
+        by priority, risk score statistics (mean, median, standard deviation), top 10 categories,
+        compliance framework violations, and the most-affected projects.
+        Good for a fast situational overview before deciding what to focus on.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-path">cmd/analyzer/filter.go</div>
+      <div class="card-title"><span class="chip chip-navy">Command</span> filter — slice and export</div>
+      <div class="card-body">
+        A utility command for data preparation. It reads a CSV, applies filters (priority, category,
+        project, risk score range), and writes just the matching rows back out as a new CSV — useful
+        for handing a focused subset to another team or loading into a spreadsheet.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-path">cmd/analyzer/pipeline.go</div>
+      <div class="card-title"><span class="chip chip-purple">Shared Logic</span> pipeline.go — the analysis engine</div>
+      <div class="card-body">
+        The most important file in the command layer. Both <em>analyze</em> and <em>fetch</em> end up
+        here. It runs every finding through the full processing chain in the correct order: scoring →
+        compliance detection → remediation guidance → optional AI enrichment → filtering → report
+        building → output writing. Separating this into its own file means the pipeline is identical
+        regardless of where the findings came from.
+      </div>
+    </div>
+
+    <!-- Package layer -->
+    <h3 style="font-size:1.1rem;font-weight:700;color:var(--navy);margin:32px 0 14px;">
+      Package Layer — the domain logic
+    </h3>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-path">pkg/fetcher/fetcher.go</div>
+        <div class="card-title"><span class="chip chip-green">Package</span> fetcher</div>
+        <div class="card-body">
+          Connects to the GCP Security Command Center gRPC API, builds a time-filtered query for
+          ACTIVE findings, and iterates through all paginated results (up to 1 000 per page).
+          Returns a clean list of internal Finding objects.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/fetcher/convert.go</div>
+        <div class="card-title"><span class="chip chip-green">Package</span> fetcher / converter</div>
+        <div class="card-body">
+          Translates the raw GCP API response (a protobuf object) into the internal data model
+          the rest of the program understands. Extracts CVE data, CVSS scores, compliance mappings,
+          resource names, and timestamps.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/parser/csv.go</div>
+        <div class="card-title"><span class="chip chip-blue">Package</span> parser</div>
+        <div class="card-body">
+          Reads a CSV file exported from GCP SCC and maps each row to an internal Finding struct.
+          Handles malformed rows gracefully — bad rows are counted and skipped rather than crashing
+          the program. Also parses embedded JSON fields (CVSS data, compliance details, etc.).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/scoring/risk.go</div>
+        <div class="card-title"><span class="chip chip-red">Package</span> scoring</div>
+        <div class="card-body">
+          The risk-scoring engine. Runs up to 8 goroutines in parallel to score all findings
+          simultaneously. Each finding receives a composite score from six components (see
+          Section 4). The engine also enforces severity floor values to prevent a high-severity
+          GCP finding from ever scoring lower than the band GCP itself assigned.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/compliance/detector.go &amp; frameworks.go</div>
+        <div class="card-title"><span class="chip chip-amber">Package</span> compliance</div>
+        <div class="card-body">
+          Maps each finding to the compliance frameworks it violates: CIS Benchmarks, PCI-DSS,
+          HIPAA, SOC 2, ISO 27001, NIST, and GDPR. The framework list is defined in
+          <em>frameworks.go</em> with alias normalization, and the detector in <em>detector.go</em>
+          applies the matching logic to each finding.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/remediation/guidance.go &amp; scripts.go</div>
+        <div class="card-title"><span class="chip chip-teal">Package</span> remediation</div>
+        <div class="card-body">
+          Generates human-readable remediation steps, estimated fix effort, automation potential,
+          and documentation links for every finding. For CRITICAL findings it also generates a
+          complete shell script with real resource names baked in, ready to run.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/llm/enricher.go</div>
+        <div class="card-title"><span class="chip chip-purple">Package</span> llm (optional)</div>
+        <div class="card-body">
+          When the <em>--ai-enhance</em> flag is set and an Anthropic API key is present, this
+          package sends each CRITICAL finding to the Claude AI API. Claude returns an improved
+          risk explanation and a more detailed remediation script tailored to the specific resource
+          and project. If the API key is absent the program runs identically without any degradation.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">pkg/report/builder.go, html.go, markdown.go, json.go, csv.go</div>
+        <div class="card-title"><span class="chip chip-navy">Package</span> report</div>
+        <div class="card-body">
+          Assembles findings into a Report object and renders it in one or more output formats.
+          The builder computes aggregate statistics (counts, risk distribution, top categories,
+          project breakdown). Each renderer (HTML, Markdown, JSON, CSV) is a separate file so
+          they can evolve independently.
+        </div>
+      </div>
+    </div>
+
+    <!-- Internal layer -->
+    <h3 style="font-size:1.1rem;font-weight:700;color:var(--navy);margin:32px 0 14px;">
+      Internal Layer — shared foundations
+    </h3>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-path">internal/models/finding.go, report.go, risk_score.go</div>
+        <div class="card-title"><span class="chip chip-navy">Models</span> Data structures</div>
+        <div class="card-body">
+          Defines the core data shapes shared by every package: <strong>Finding</strong> (a single
+          security issue with all its attributes), <strong>RiskScore</strong> (the scoring
+          breakdown), <strong>RemediationStep</strong> (guidance + scripts), and
+          <strong>Report</strong> (the final assembled output).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-path">internal/utils/logger.go, helpers.go, flags.go</div>
+        <div class="card-title"><span class="chip chip-navy">Utils</span> Shared helpers</div>
+        <div class="card-body">
+          Provides a structured logger with Info/Debug/Warn levels, math helpers (rounding,
+          clamping, safe percentages), string utilities, and a flag-parsing helper that correctly
+          separates positional arguments from named flags regardless of their order on the command line.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 3. LIVE FINDINGS                               -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="live-findings">
+    <p class="section-label">Section 3</p>
+    <h2 class="section-title">How live findings are pulled from GCP</h2>
+    <p class="section-body">
+      When you run the <strong>fetch</strong> command, the tool speaks directly to Google's
+      Security Command Center API over an encrypted gRPC connection. Here is exactly what happens
+      under the hood, in plain terms.
+    </p>
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-num">1</div>
+        <div class="pipe-content">
+          <strong>Authentication</strong>
+          <span>
+            The tool uses your existing Google Cloud credentials — the same ones set up by running
+            <code style="font-family:monospace;font-size:0.85em;">gcloud auth application-default login</code>.
+            No passwords or API keys need to be embedded in the tool itself.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">2</div>
+        <div class="pipe-content">
+          <strong>Building the query</strong>
+          <span>
+            The tool constructs a filter that asks for all findings where: (a) the status is
+            <em>ACTIVE</em> — meaning GCP has not yet marked them as resolved, and (b) the event
+            time is within your chosen lookback window (default: last 7 days). It targets your
+            entire GCP organization at once, so findings from all projects under that organization
+            are included.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">3</div>
+        <div class="pipe-content">
+          <strong>Paginated retrieval</strong>
+          <span>
+            GCP returns results in pages of up to 1 000 findings at a time. The tool automatically
+            fetches every page until there are no more results, so you always get the complete
+            picture even for large organizations. Progress is logged every 500 findings.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">4</div>
+        <div class="pipe-content">
+          <strong>Data conversion</strong>
+          <span>
+            Each raw GCP finding (a protobuf object from the API) is translated into the internal
+            Finding format the rest of the program works with. This step extracts CVE identifiers,
+            CVSS scores, zero-day and exploit-in-the-wild flags, public IP exposure, compliance
+            framework mappings, and resource/project metadata from the nested API response.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">5</div>
+        <div class="pipe-content">
+          <strong>Hand-off to the analysis pipeline</strong>
+          <span>
+            At this point the findings look identical to what the <em>analyze</em> command would
+            have produced from a CSV file. They flow into the same scoring, compliance, remediation,
+            and report-generation steps described in the next section. There is no difference in
+            the output quality between the live API mode and the CSV mode.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>What authentication is needed?</strong> The tool requires a GCP service account (or
+      your personal credentials) with the
+      <strong>Security Center Findings Viewer</strong> role
+      (<code style="font-size:0.85em;">roles/securitycenter.findingsViewer</code>) on the organization.
+      For CI/CD pipelines, a dedicated service account with this single role is recommended.
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 4. TUTORIAL                                    -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="tutorial">
+    <p class="section-label">Section 4</p>
+    <h2 class="section-title">Tutorial: pull &amp; save live data as CSV</h2>
+    <p class="section-body">
+      This walkthrough takes you from a fresh machine to a saved CSV file containing your
+      organization's most recent active findings — and an analyzed report. Follow the steps in
+      order. Each step builds on the previous one.
+    </p>
+
+    <!-- ── Step 1: Install ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;">
+      Step 1 — Install the tool
+    </h3>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-body">
+        <p style="margin-bottom:10px;">Clone the repository and build the binary. You need Go 1.21 or later.</p>
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px 20px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.7;overflow-x:auto;"><span style="color:#64748b;"># Clone and build</span>
+git clone https://github.com/wanaware/GCP-Sec.git
+cd GCP-Sec
+go build -o GCP-Sec .
+
+<span style="color:#64748b;"># Verify it works</span>
+./GCP-Sec version</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          The binary is self-contained — no runtime dependencies, no installation wizard.
+          Move it anywhere on your <code style="font-size:0.85em;">$PATH</code> if you like.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Step 2: Auth ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;">
+      Step 2 — Authenticate to GCP
+    </h3>
+    <div class="card" style="margin-bottom:8px;">
+      <div class="card-title"><span class="chip chip-green">Option A</span> &nbsp;Personal credentials (local use)</div>
+      <div class="card-body">
+        <p style="margin-bottom:10px;">If you already have the <code style="font-size:0.85em;">gcloud</code> CLI installed and are logged in to your GCP account, run:</p>
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 18px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.7;overflow-x:auto;">gcloud auth application-default login</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          This writes a credentials file to your home directory. The tool picks it up automatically — no extra configuration needed.
+        </p>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title"><span class="chip chip-blue">Option B</span> &nbsp;Service account key (CI/CD or shared use)</div>
+      <div class="card-body">
+        <p style="margin-bottom:10px;">If you have a JSON key file for a service account that has the <strong>Security Center Findings Viewer</strong> role (<code style="font-size:0.85em;">roles/securitycenter.findingsViewer</code>), point the tool at it with an environment variable:</p>
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 18px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.7;overflow-x:auto;">export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          Set this once per shell session (or add it to your shell profile). Never commit the key file to version control.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Find org ID ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;">
+      Step 3 — Find your GCP Organization ID
+    </h3>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-body">
+        <p style="margin-bottom:10px;">The <code style="font-size:0.85em;">fetch</code> command requires your GCP Organization ID (a numeric ID, not the display name). Find it with:</p>
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 18px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.7;overflow-x:auto;">gcloud organizations list</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          The output shows a table with <code style="font-size:0.85em;">DISPLAY_NAME</code>, <code style="font-size:0.85em;">ID</code>, and <code style="font-size:0.85em;">DIRECTORY_CUSTOMER_ID</code>.
+          Copy the value from the <strong>ID</strong> column — it looks like <code style="font-size:0.85em;">123456789012</code>.
+          You will use this as the <code style="font-size:0.85em;">--org-id</code> argument in the next steps.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Step 4: Fetch and save CSV ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;">
+      Step 4 — Fetch live findings and save as CSV
+    </h3>
+    <p style="color:var(--t2);font-size:0.9rem;margin-bottom:14px;">
+      This is the core command. It connects to the GCP Security Command Center API, downloads
+      all active findings within your chosen lookback window, and saves the raw data as a CSV file
+      you can open in a spreadsheet or feed back into the tool later.
+    </p>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title"><span class="chip chip-green">Most common</span> &nbsp;Last 7 days, save CSV + generate report</div>
+      <div class="card-body">
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px 20px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.8;overflow-x:auto;"><span style="color:#64748b;"># Replace 123456789012 with your real Organization ID</span>
+./GCP-Sec fetch \
+  --org-id 123456789012 \
+  --days 7 \
+  --save-csv findings-<span style="color:#86efac;">$(date +%Y%m%d)</span>.csv</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          This saves a timestamped CSV (e.g. <code style="font-size:0.85em;">findings-20260309.csv</code>)
+          and immediately runs the analysis pipeline on the same data, writing
+          <code style="font-size:0.85em;">scc-org-123456789012-report.md</code> and
+          <code style="font-size:0.85em;">.html</code> alongside it.
+        </p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title"><span class="chip chip-amber">Wider window</span> &nbsp;Last 30 days, Critical &amp; High only</div>
+      <div class="card-body">
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px 20px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.8;overflow-x:auto;">./GCP-Sec fetch \
+  --org-id 123456789012 \
+  --days 30 \
+  --priority critical,high \
+  --save-csv critical-high-<span style="color:#86efac;">$(date +%Y%m%d)</span>.csv \
+  -o reports/critical-high-report.md</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          The <code style="font-size:0.85em;">--priority</code> filter applies <em>after</em> the full dataset is fetched and scored,
+          so the CSV contains only the matching findings while the report directory is set by
+          the stem of the <code style="font-size:0.85em;">-o</code> path.
+        </p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title"><span class="chip chip-purple">Full options</span> &nbsp;AI-enhanced, all formats, verbose logging</div>
+      <div class="card-body">
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px 20px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.8;overflow-x:auto;"><span style="color:#64748b;"># Set your Claude API key for AI-enhanced remediation on CRITICAL findings</span>
+export ANTHROPIC_API_KEY=sk-ant-...
+
+./GCP-Sec fetch \
+  --org-id 123456789012 \
+  --days 7 \
+  --save-csv raw-<span style="color:#86efac;">$(date +%Y%m%d)</span>.csv \
+  --formats markdown,html,json \
+  -d ./reports \
+  --include-remediation \
+  --include-compliance \
+  --ai-enhance \
+  --verbose</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          Writes three report files into <code style="font-size:0.85em;">./reports/</code> (Markdown, HTML, JSON),
+          saves the raw CSV, annotates compliance framework violations, and sends CRITICAL findings
+          to the Claude API for AI-enhanced risk rationale and remediation scripts.
+        </p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-title"><span class="chip chip-teal">CSV only</span> &nbsp;Save raw data without generating a report</div>
+      <div class="card-body">
+        <p style="margin-bottom:10px;font-size:0.88rem;color:var(--t2);">
+          There is no "CSV only" mode — the tool always runs the analysis pipeline. To get just the
+          CSV with minimal overhead, pass <code style="font-size:0.85em;">--format csv</code> so
+          the report itself is also written as CSV, then use only the
+          <code style="font-size:0.85em;">--save-csv</code> file in subsequent steps:
+        </p>
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 18px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.8;overflow-x:auto;">./GCP-Sec fetch \
+  --org-id 123456789012 \
+  --days 7 \
+  --save-csv raw-findings.csv \
+  --format csv \
+  -o scored-findings.csv</pre>
+        <p style="margin-top:10px;font-size:0.88rem;color:var(--t2);">
+          <code style="font-size:0.85em;">raw-findings.csv</code> — the unsorted raw data exactly as fetched from GCP.<br/>
+          <code style="font-size:0.85em;">scored-findings.csv</code> — the same data after scoring, filtering, and sorting by risk score.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Step 5: Re-analyze the saved CSV ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;">
+      Step 5 — Re-analyze the saved CSV (optional)
+    </h3>
+    <p style="color:var(--t2);font-size:0.9rem;margin-bottom:14px;">
+      Once you have a CSV file you can run the <code style="font-size:0.85em;">analyze</code>
+      command on it as many times as you like — with different filters, formats, or options —
+      without needing to hit the GCP API again.
+    </p>
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-body">
+        <pre style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:16px 20px;font-family:'SF Mono','Fira Code',monospace;font-size:0.82rem;line-height:1.8;overflow-x:auto;"><span style="color:#64748b;"># Generate a full HTML + Markdown report from the saved CSV</span>
+./GCP-Sec analyze raw-findings.csv \
+  --include-remediation \
+  -o reports/full-report.md
+
+<span style="color:#64748b;"># Filter down to just Critical, split into separate files per priority</span>
+./GCP-Sec analyze raw-findings.csv \
+  --priority critical \
+  --split-by-priority \
+  -d reports/split/
+
+<span style="color:#64748b;"># Quick stats summary — no report file written</span>
+./GCP-Sec stats raw-findings.csv</pre>
+      </div>
+    </div>
+
+    <!-- ── Reference table ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 12px;">
+      Quick reference — fetch command flags
+    </h3>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+        <thead>
+          <tr style="background:var(--navy);color:#fff;">
+            <th style="padding:10px 14px;text-align:left;border-radius:8px 0 0 0;font-weight:600;">Flag</th>
+            <th style="padding:10px 14px;text-align:left;font-weight:600;">Required?</th>
+            <th style="padding:10px 14px;text-align:left;border-radius:0 8px 0 0;font-weight:600;">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:var(--card);border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--org-id</td>
+            <td style="padding:10px 14px;"><span class="chip chip-red">Required</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Your GCP Organization ID (numeric). Found with <code style="font-size:0.85em;">gcloud organizations list</code>.</td>
+          </tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--days</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Lookback window in days. Default: <strong>7</strong>. Use 1 for the last 24 hours, 30 for the last month.</td>
+          </tr>
+          <tr style="background:var(--card);border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--save-csv</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Path to save the raw fetched findings as CSV before analysis (e.g. <code style="font-size:0.85em;">raw-20260309.csv</code>).</td>
+          </tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">-o / --output</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Output file path. The file stem becomes the base name for all generated report files.</td>
+          </tr>
+          <tr style="background:var(--card);border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">-d / --output-dir</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Write all report files into this directory instead of the current working directory.</td>
+          </tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--formats</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Comma-separated output formats: <code style="font-size:0.85em;">markdown,html,json,csv</code>. Default: markdown + html.</td>
+          </tr>
+          <tr style="background:var(--card);border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--priority</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Filter results: <code style="font-size:0.85em;">critical</code>, <code style="font-size:0.85em;">high</code>, <code style="font-size:0.85em;">medium</code>, <code style="font-size:0.85em;">low</code> (comma-separated).</td>
+          </tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--include-remediation</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Add step-by-step remediation guidance and shell scripts to the report. On by default.</td>
+          </tr>
+          <tr style="background:var(--card);border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--include-compliance</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Map each finding to violated compliance controls (CIS, PCI-DSS, HIPAA, SOC 2, NIST, GDPR).</td>
+          </tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--ai-enhance</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Use Claude AI to improve rationale and remediation scripts for CRITICAL findings. Requires <code style="font-size:0.85em;">ANTHROPIC_API_KEY</code>.</td>
+          </tr>
+          <tr style="background:var(--card);">
+            <td style="padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;color:var(--blue);font-size:0.8rem;">--verbose / --debug</td>
+            <td style="padding:10px 14px;"><span class="chip chip-navy">Optional</span></td>
+            <td style="padding:10px 14px;color:var(--t2);">Show detailed progress logs during fetch and analysis.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── What you get ── -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:28px 0 12px;">
+      What you get after running the command
+    </h3>
+    <div class="grid-2" style="margin-bottom:8px;">
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> The raw CSV (<code style="font-size:0.8rem;">--save-csv</code>)</div>
+        <div class="card-body">
+          The findings exactly as returned by GCP — one row per finding, with all raw fields
+          preserved. Use this to archive a point-in-time snapshot, share with another team,
+          load into a SIEM, or re-analyze later with different options.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📄</span> The analyzed report</div>
+        <div class="card-body">
+          A prioritized, scored report in your chosen format(s). Findings are sorted by risk
+          score (highest first), annotated with compliance violations and remediation steps,
+          and summarized in an executive statistics block at the top.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🛠</span> Remediation scripts</div>
+        <div class="card-body">
+          For CRITICAL findings, a <code style="font-size:0.82rem;">remediation-scripts/</code>
+          subdirectory is created containing runnable shell scripts — one per finding — with
+          the real resource names and project IDs already filled in.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Terminal summary</div>
+        <div class="card-body">
+          A quick dashboard is always printed to the terminal: total findings, Critical / High /
+          Medium / Low counts, mean risk score, and score range — so you get the headline
+          numbers without opening any file.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:20px;">
+      <strong>Tip: run stats first.</strong> Before generating a full report on a large dataset,
+      run <code style="font-size:0.85em;">./GCP-Sec stats raw-findings.csv</code>
+      to see a breakdown by priority and category. This helps you decide which filters to apply
+      when generating the report, avoiding an overwhelming multi-thousand-finding output.
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 5. ANALYSIS PIPELINE                           -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="pipeline">
+    <p class="section-label">Section 5</p>
+    <h2 class="section-title">The analysis pipeline, step by step</h2>
+    <p class="section-body">
+      Once findings are loaded — whether from the API or a CSV file — they go through the same
+      seven-stage pipeline. Each stage enriches the findings with additional context.
+    </p>
+
+    <!-- Scoring breakdown -->
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:0 0 16px;">
+      Stage 1 — Risk Scoring (0–100 scale)
+    </h3>
+    <p style="color:var(--t2);font-size:0.9rem;margin-bottom:20px;">
+      Every finding gets a numeric risk score assembled from six components. The final score is
+      capped at 100, and a severity floor is enforced so that a GCP CRITICAL finding always scores
+      at least 75, and HIGH at least 55 — even if vulnerability metadata is missing.
+    </p>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div class="score-bar">
+            <div class="score-bar-label"><span>Base Severity</span><span style="color:var(--red);font-weight:700;">up to 40 pts</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--red);"></div></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t2);margin-bottom:14px;">Critical=40, High=30, Medium=20, Low=10 — GCP's own severity rating.</div>
+
+          <div class="score-bar">
+            <div class="score-bar-label"><span>CVSS Score</span><span style="color:var(--amber);font-weight:700;">up to 30 pts</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--amber);"></div></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t2);margin-bottom:14px;">The industry-standard vulnerability severity score (0–10), scaled up.</div>
+
+          <div class="score-bar">
+            <div class="score-bar-label"><span>Exploitability</span><span style="color:var(--purple);font-weight:700;">up to 20 pts</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--purple);"></div></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t2);margin-bottom:14px;">Bonus points for: actively exploited in the wild (+10), zero-day (+8), active exploit code available (+6), known CVE (+2).</div>
+        </div>
+        <div>
+          <div class="score-bar">
+            <div class="score-bar-label"><span>Finding Class</span><span style="color:var(--blue);font-weight:700;">up to 10 pts</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--blue);"></div></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t2);margin-bottom:14px;">THREAT=10, VULNERABILITY=7, MISCONFIGURATION=5, OBSERVATION=2.</div>
+
+          <div class="score-bar">
+            <div class="score-bar-label"><span>Internet Exposure</span><span style="color:var(--teal);font-weight:700;">up to 10 pts</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--teal);"></div></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t2);margin-bottom:14px;">Public IP address (+5), load-balancer facing (+3), data store (bucket/database) (+2).</div>
+
+          <div class="score-bar">
+            <div class="score-bar-label"><span>Compliance Impact</span><span style="color:var(--green);font-weight:700;">up to 10 pts</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--green);"></div></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t2);margin-bottom:14px;">Bonus when the finding maps to a compliance framework (PCI-DSS, HIPAA, etc.).</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:0.85rem;color:var(--t2);">
+        After summing the six components the total is multiplied by a <strong>category weight</strong> (0.8×–1.2×)
+        based on the type of finding — vulnerability and privilege-escalation categories get a 1.2× multiplier,
+        and informational observations get 0.8×.
+      </div>
+    </div>
+
+    <!-- Remaining stages -->
+    <div class="pipeline" style="margin-top:10px;">
+      <div class="pipe-step">
+        <div class="pipe-num">2</div>
+        <div class="pipe-content">
+          <strong>Compliance Detection</strong>
+          <span>
+            The compliance detector checks each finding against seven frameworks — CIS Benchmarks,
+            PCI-DSS, HIPAA, SOC 2, ISO 27001, NIST, and GDPR — and records which controls are
+            violated. The framework names in GCP data come in many inconsistent formats; the detector
+            normalizes them all to canonical identifiers before matching.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">3</div>
+        <div class="pipe-content">
+          <strong>Remediation Guidance (optional, on by default)</strong>
+          <span>
+            For each finding the remediation generator produces: a plain-English summary of what
+            needs to change; step-by-step fix instructions; an estimated time to fix (Low/Medium/High);
+            links to official GCP documentation; and an automation hint showing the relevant gcloud
+            command. CRITICAL findings additionally receive a full, runnable shell script with
+            the real resource names already filled in.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">4</div>
+        <div class="pipe-content">
+          <strong>AI Enrichment (optional, requires --ai-enhance)</strong>
+          <span>
+            If enabled, CRITICAL findings are sent to the Claude AI API. Claude reads the full
+            finding context — category, severity, resource name, project, description, CVE — and
+            returns an improved risk explanation and a more tailored remediation script. Up to four
+            findings are enriched in parallel. The program works normally if this flag is absent.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">5</div>
+        <div class="pipe-content">
+          <strong>Filtering</strong>
+          <span>
+            The scored, enriched findings are filtered down based on flags you passed: priority
+            level (Critical/High/Medium/Low), category keyword, specific GCP project, or a
+            minimum/maximum risk score. Only the filtered subset appears in the final report.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">6</div>
+        <div class="pipe-content">
+          <strong>Report Building</strong>
+          <span>
+            The report builder assembles aggregate statistics — total counts by priority, risk score
+            distribution (mean, median, std dev), top categories by frequency, and project-level
+            breakdowns — then organizes findings by priority order (Critical first) ready for rendering.
+          </span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">7</div>
+        <div class="pipe-content">
+          <strong>Output Writing</strong>
+          <span>
+            The report is rendered into one or more output formats — Markdown, HTML, JSON, CSV —
+            and written to disk. Optionally, per-finding remediation shell scripts are written to
+            a <code style="font-family:monospace;font-size:0.85em;">remediation-scripts/</code>
+            subdirectory so engineers can review and run them directly.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 6. SAST                                        -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="sast">
+    <p class="section-label">Section 6</p>
+    <h2 class="section-title">The SAST security layer</h2>
+    <p class="section-body">
+      The GCP Security Analyzer is itself a security tool — so it holds itself to a high security
+      standard. A SAST (Static Application Security Testing) pipeline watches the source code of
+      the analyzer itself, scanning for secrets, code vulnerabilities, and known CVEs every time
+      code is pushed to GitHub. Think of it as "security for the security tool."
+    </p>
+
+    <div class="callout">
+      <strong>Why does a CLI tool need SAST?</strong> Security tools often handle credentials,
+      API keys, and sensitive data. If the tool itself has a hardcoded secret, a vulnerable
+      dependency, or a code flaw, it becomes the weak link. SAST closes that gap automatically.
+    </div>
+
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:28px 0 14px;">
+      The four scanning tools
+    </h3>
+
+    <div class="tool-grid">
+      <div class="tool-card">
+        <div class="tool-header" style="background:var(--red-bg);color:var(--red);">
+          <span class="icon">🔑</span> Gitleaks — Secret Scanner
+        </div>
+        <div class="tool-body">
+          <p style="margin-bottom:8px;">Scans every file and git commit for hardcoded secrets: API keys, GCP service account private keys, auth tokens, and generic API key patterns.</p>
+          <ul>
+            <li>Runs as a pre-commit hook locally (catches secrets before they are committed)</li>
+            <li>Also runs in CI on every push</li>
+            <li>Custom rules target GCP-specific credential formats</li>
+            <li><strong>Blocks the build</strong> if a secret is found</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-header" style="background:var(--amber-bg);color:var(--amber);">
+          <span class="icon">🔬</span> Semgrep — Code Analysis
+        </div>
+        <div class="tool-body">
+          <p style="margin-bottom:8px;">Reads the Go source code and looks for vulnerable patterns using both custom rules and the community Go/OWASP rulesets.</p>
+          <ul>
+            <li>Hardcoded GCP credentials in code</li>
+            <li>Insecure TLS configuration (<code style="font-size:0.85em;">InsecureSkipVerify</code>)</li>
+            <li>Command injection risks</li>
+            <li>Weak cryptography (MD5, SHA-1)</li>
+            <li>Sensitive variables being logged</li>
+            <li><strong>Blocks the build</strong> on ERROR-level findings</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-header" style="background:var(--blue-bg);color:var(--blue);">
+          <span class="icon">📦</span> govulncheck — Dependency CVEs
+        </div>
+        <div class="tool-body">
+          <p style="margin-bottom:8px;">Scans the Go module dependency tree against the official Go vulnerability database maintained by the Go security team.</p>
+          <ul>
+            <li>Checks every imported library for known CVEs</li>
+            <li>Only flags vulnerabilities that are actually reachable in the code (smarter than just checking the dependency list)</li>
+            <li>Runs as an advisory — results are uploaded but do not automatically block merges</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-header" style="background:var(--green-bg);color:var(--green);">
+          <span class="icon">🐳</span> Trivy — Filesystem &amp; Dep Scan
+        </div>
+        <div class="tool-body">
+          <p style="margin-bottom:8px;">Scans the entire filesystem and compiled binary for HIGH and CRITICAL CVEs from multiple vulnerability databases (NVD, GitHub Advisories, OSV).</p>
+          <ul>
+            <li>Broader database coverage than govulncheck alone</li>
+            <li>Detects OS-level vulnerabilities if a Dockerfile is present</li>
+            <li>Produces a SARIF report for the GitHub Security tab</li>
+            <li><strong>Blocks the build</strong> on HIGH/CRITICAL findings</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin:32px 0 14px;">
+      What happens after the scans
+    </h3>
+
+    <div class="arch-row">
+      <div class="arch-label">SARIF Upload</div>
+      <div class="arch-body">
+        Gitleaks, Semgrep, and Trivy all produce reports in the SARIF format (a standard for
+        security findings). These are automatically uploaded to the GitHub Security → Code Scanning
+        tab, where findings are displayed with file locations, severity levels, and links to
+        the relevant rule documentation.
+      </div>
+    </div>
+
+    <div class="arch-row">
+      <div class="arch-label">GCS Storage</div>
+      <div class="arch-body">
+        All four scan reports (JSON + SARIF) are uploaded to a Google Cloud Storage bucket
+        (<strong>wanaware-sast-reports</strong>) keyed by commit SHA. Reports are retained for
+        365 days and are not publicly accessible. This creates a permanent, auditable record of
+        every security scan result for every build.
+      </div>
+    </div>
+
+    <div class="arch-row">
+      <div class="arch-label">Email Notification</div>
+      <div class="arch-body">
+        After every scan run (pass <em>or</em> fail), an email notification is sent to the
+        security team via SendGrid. The email includes the overall pass/fail status, the result
+        of each individual scan tool, a link to the GitHub Security tab, and a link to the
+        full reports in GCS. This job always runs even when a scan fails, so nothing is ever
+        silently dropped.
+      </div>
+    </div>
+
+    <div class="arch-row">
+      <div class="arch-label">Local Hooks</div>
+      <div class="arch-body">
+        Developers can install a Git pre-commit hook (one <code style="font-size:0.9em;">make setup-hooks</code>
+        command) that runs Gitleaks before every commit. This catches secrets on the developer's
+        machine before they ever reach GitHub, providing a "shift-left" safety net without
+        waiting for CI.
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 7. ARCHITECTURE                                -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section" id="architecture">
+    <p class="section-label">Section 7</p>
+    <h2 class="section-title">How everything fits together</h2>
+    <p class="section-body">
+      The diagram below shows the two parallel systems — the GCP analyzer (what the tool does)
+      and the SAST pipeline (how the tool's own code is secured) — and how they relate.
+    </p>
+
+    <!-- Architecture diagram as styled boxes -->
+    <div style="background:var(--navy);border-radius:12px;padding:32px;margin-bottom:24px;">
+
+      <!-- Row 1: inputs -->
+      <div style="text-align:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Data Sources</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:14px 16px;text-align:center;">
+          <div style="color:#94a3b8;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Live API</div>
+          <div style="color:#f1f5f9;font-size:0.88rem;font-weight:600;">GCP Security Command Center</div>
+          <div style="color:#64748b;font-size:0.78rem;margin-top:2px;">gRPC · paginated · real-time</div>
+        </div>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:14px 16px;text-align:center;">
+          <div style="color:#94a3b8;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">CSV Export</div>
+          <div style="color:#f1f5f9;font-size:0.88rem;font-weight:600;">GCP SCC CSV Download</div>
+          <div style="color:#64748b;font-size:0.78rem;margin-top:2px;">parse · validate · normalize</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:12px;">↓</div>
+
+      <!-- Row 2: CLI -->
+      <div style="text-align:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">CLI Commands</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+        <div style="background:#2563eb;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.8rem;font-weight:700;">fetch</div>
+          <div style="color:#bfdbfe;font-size:0.72rem;margin-top:2px;">live API</div>
+        </div>
+        <div style="background:#2563eb;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.8rem;font-weight:700;">analyze</div>
+          <div style="color:#bfdbfe;font-size:0.72rem;margin-top:2px;">CSV file</div>
+        </div>
+        <div style="background:#334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#e2e8f0;font-size:0.8rem;font-weight:700;">stats</div>
+          <div style="color:#64748b;font-size:0.72rem;margin-top:2px;">summary</div>
+        </div>
+        <div style="background:#334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#e2e8f0;font-size:0.8rem;font-weight:700;">filter</div>
+          <div style="color:#64748b;font-size:0.72rem;margin-top:2px;">export CSV</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:12px;">↓</div>
+
+      <!-- Row 3: Pipeline -->
+      <div style="text-align:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Analysis Pipeline</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;">
+        <div style="background:#7c3aed;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.75rem;font-weight:700;">Scoring</div>
+          <div style="color:#ddd6fe;font-size:0.68rem;margin-top:2px;">0–100 risk</div>
+        </div>
+        <div style="background:#b45309;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.75rem;font-weight:700;">Compliance</div>
+          <div style="color:#fde68a;font-size:0.68rem;margin-top:2px;">CIS·PCI·HIPAA…</div>
+        </div>
+        <div style="background:#0f766e;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.75rem;font-weight:700;">Remediation</div>
+          <div style="color:#99f6e4;font-size:0.68rem;margin-top:2px;">steps + scripts</div>
+        </div>
+        <div style="background:#1e3a8a;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.75rem;font-weight:700;">AI Enrich</div>
+          <div style="color:#bfdbfe;font-size:0.68rem;margin-top:2px;">Claude API</div>
+        </div>
+        <div style="background:#166534;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#fff;font-size:0.75rem;font-weight:700;">Filter</div>
+          <div style="color:#bbf7d0;font-size:0.68rem;margin-top:2px;">priority/score</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:12px;">↓</div>
+
+      <!-- Row 4: Outputs -->
+      <div style="text-align:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Outputs</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#f1f5f9;font-size:0.8rem;font-weight:600;">HTML Report</div>
+        </div>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#f1f5f9;font-size:0.8rem;font-weight:600;">Markdown</div>
+        </div>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#f1f5f9;font-size:0.8rem;font-weight:600;">JSON / CSV</div>
+        </div>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#f1f5f9;font-size:0.8rem;font-weight:600;">Shell Scripts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAST architecture -->
+    <div style="background:#1e293b;border-radius:12px;padding:28px;margin-top:20px;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">
+          SAST Pipeline — runs in parallel on every git push
+        </span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+        <div style="background:#dc2626;border-radius:6px;padding:12px;text-align:center;">
+          <div style="color:#fff;font-size:0.8rem;font-weight:700;">Gitleaks</div>
+          <div style="color:#fecaca;font-size:0.7rem;margin-top:3px;">secret scanning</div>
+        </div>
+        <div style="background:#b45309;border-radius:6px;padding:12px;text-align:center;">
+          <div style="color:#fff;font-size:0.8rem;font-weight:700;">Semgrep</div>
+          <div style="color:#fde68a;font-size:0.7rem;margin-top:3px;">code analysis</div>
+        </div>
+        <div style="background:#2563eb;border-radius:6px;padding:12px;text-align:center;">
+          <div style="color:#fff;font-size:0.8rem;font-weight:700;">govulncheck</div>
+          <div style="color:#bfdbfe;font-size:0.7rem;margin-top:3px;">dep CVEs</div>
+        </div>
+        <div style="background:#166534;border-radius:6px;padding:12px;text-align:center;">
+          <div style="color:#fff;font-size:0.8rem;font-weight:700;">Trivy</div>
+          <div style="color:#bbf7d0;font-size:0.7rem;margin-top:3px;">filesystem CVEs</div>
+        </div>
+      </div>
+      <div style="text-align:center;color:#475569;font-size:1rem;margin-bottom:12px;">↓</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#94a3b8;font-size:0.78rem;font-weight:600;">SARIF → GitHub Security Tab</div>
+        </div>
+        <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#94a3b8;font-size:0.78rem;font-weight:600;">Reports → GCS Bucket</div>
+        </div>
+        <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;text-align:center;">
+          <div style="color:#94a3b8;font-size:0.78rem;font-weight:600;">Email → Security Team</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:28px;">
+      <strong>Key design principle: separation of concerns.</strong>
+      The two systems operate independently. The SAST pipeline watches the <em>source code</em> of the
+      analyzer. The analyzer itself watches your <em>GCP infrastructure</em>. Neither interferes
+      with the other, and either can be updated or extended without touching the other.
+    </div>
+  </div>
+
+  <div class="footer">
+    GCP Security Analyzer · wanaware · Generated 2026-03-09
+  </div>
+
+</div>
+</body>
+</html>
